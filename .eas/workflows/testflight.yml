@@ -1,0 +1,23 @@
+# Every push to main builds the iPhone app in Expo's cloud and sends it to TestFlight.
+# One-time setup first: see README, "First build".
+name: Build and send to TestFlight
+
+on:
+  push:
+    branches: ['main']
+
+jobs:
+  build_ios:
+    name: Build iOS
+    type: build
+    params:
+      platform: ios
+      profile: production
+
+  submit_ios:
+    name: Send to TestFlight
+    type: submit
+    needs: [build_ios]
+    params:
+      build_id: ${{ needs.build_ios.outputs.build_id }}
+      profile: production

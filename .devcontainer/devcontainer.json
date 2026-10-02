@@ -1,0 +1,8 @@
+{
+  "name": "Cardi",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "postCreateCommand": "npm ci",
+  "customizations": {
+    "vscode": { "extensions": ["expo.vscode-expo-tools"] }
+  }
+}

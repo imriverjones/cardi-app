@@ -1,23 +1,33 @@
 {
   "expo": {
-    "name": "cardi-app",
-    "slug": "cardi-app",
-    "version": "1.0.0",
+    "name": "Cardi",
+    "slug": "cardi",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "cardiapp",
+    "scheme": "cardi",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "bundleIdentifier": "com.imriverjones.cardi",
+      "supportsTablet": false,
+      "deploymentTarget": "17.0",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Cardi uses your location to get the forecast where you are. It's only used for the weather.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": [
+          "fetch",
+          "processing"
+        ]
+      }
     },
     "android": {
+      "package": "com.imriverjones.cardi",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FFE2DE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
-      },
-      "predictiveBackGestureEnabled": false
+      }
     },
     "web": {
       "output": "static",
@@ -28,9 +38,45 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#FFEDEB",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 120
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Cardi uses your location to get the forecast where you are. It's only used for the weather."
+        }
+      ],
+      "expo-background-task",
+      [
+        "expo-widgets",
+        {
+          "groupIdentifier": "group.com.imriverjones.cardi",
+          "widgets": [
+            {
+              "name": "CardiWidget",
+              "displayName": "Cardi",
+              "description": "What to wear, and your feels like, at a glance.",
+              "supportedFamilies": [
+                "systemSmall",
+                "systemMedium",
+                "systemLarge",
+                "accessoryCircular",
+                "accessoryRectangular",
+                "accessoryInline"
+              ]
+            },
+            {
+              "name": "CheckInWidget",
+              "displayName": "Cardi check-in",
+              "description": "Tell Cardi how today felt, right from your Home Screen.",
+              "supportedFamilies": [
+                "systemSmall"
+              ]
+            }
+          ]
         }
       ]
     ],

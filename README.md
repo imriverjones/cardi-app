@@ -1,56 +1,117 @@
-# Welcome to your Expo app 👋
+# Cardi
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+What to wear, how your hair will behave and when you need SPF, for the hours you're actually outside. With a "feels like" that's tuned to you.
 
-## Get started
+Built with Expo (React Native) for iPhone, with native Home Screen and Lock Screen widgets.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## Getting it onto your iPhone (no Mac needed)
 
-2. Start the app
+You'll do this once. It takes about 30–45 minutes, mostly waiting for the build.
 
-   ```bash
-   npx expo start
-   ```
+### What you need
 
-In the output, you'll find options to open the app in a
+- An **Apple Developer account** (you have one)
+- A free **Expo account**: sign up at [expo.dev](https://expo.dev)
+- The **TestFlight** app on your iPhone (free on the App Store)
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### 1. Open the project in your browser
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+You don't need to install anything on your laptop.
 
-## Get a fresh project
+1. On GitHub, open this repo, click the green **Code** button, then the **Codespaces** tab, then **Create codespace on main**.
+2. Wait a minute or two. A code editor opens in your browser and installs everything automatically.
+3. At the bottom there's a **Terminal**. That's where you'll paste the commands below.
 
-When you're ready, run:
+### 2. Connect to Expo
 
 ```bash
-npm run reset-project
+npx eas-cli@latest login
+npx eas-cli@latest init
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+`init` asks to create a project called "cardi". Say yes. It adds a project ID to `app.json`.
 
-### Other setup steps
+### 3. Build the app
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```bash
+npx eas-cli@latest build -p ios --profile production
+```
 
-## Learn more
+It asks a few questions. Say yes to everything, and log in with your Apple ID when asked. Expo then:
 
-To learn more about developing your project with Expo, look at the following resources:
+- creates the app's ID (`com.imriverjones.cardi`) and the widget's ID in your Apple account
+- sets up the shared storage the widget uses (App Group `group.com.imriverjones.cardi`)
+- creates the signing certificates
+- builds the app in the cloud (about 15–25 minutes)
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+> **If the bundle ID is taken:** change `com.imriverjones.cardi` in `app.json` (both places) and `group.com.imriverjones.cardi` to something else, then run the build again.
 
-## Join the community
+### 4. Send it to TestFlight
 
-Join our community of developers creating universal apps.
+```bash
+npx eas-cli@latest submit -p ios --latest
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+The first time, this creates the app in App Store Connect. App Store names must be unique, so if "Cardi" is taken, it'll ask for another, for example "Cardi: What to Wear".
+
+Apple takes 10–30 minutes to process the build. Then open **TestFlight** on your iPhone and install Cardi.
+
+### 5. Save your changes
+
+In the Codespace terminal:
+
+```bash
+git add app.json && git commit -m "Link Expo project" && git push
+```
+
+### 6. Add the widgets
+
+On your Home Screen, long-press an empty spot, tap **Edit → Add Widget**, search for **Cardi**, and pick a size. There's also a **Cardi check-in** widget with "Bit chilly / Spot on / Too warm" buttons. For the Lock Screen, long-press it, tap **Customise → Lock Screen**, and add Cardi under the clock.
+
+---
+
+## Automatic builds (optional, after the first build)
+
+Once step 3 has worked, every push to `main` can build and send to TestFlight on its own:
+
+1. In the [Expo dashboard](https://expo.dev), open the **cardi** project, go to **Project settings → GitHub**, and connect this repo.
+2. That's it. The workflow in `.eas/workflows/testflight.yml` runs on every push to `main`.
+
+---
+
+## How it works
+
+| Part | Where |
+|---|---|
+| Screens (Today, Week, Me, setup, stories, place search) | `src/app/` |
+| Advice engine: personal feels like, outfit, hair, rain, UV, commute, school run, drying day | `src/engine/advice.ts` |
+| Weather (Open-Meteo hourly forecast) and location | `src/weather/forecast.ts` |
+| Settings and app state | `src/state/app-state.tsx` |
+| Home and Lock Screen widget | `src/widgets/CardiWidget.tsx` |
+| Interactive check-in widget | `src/widgets/CheckInWidget.tsx` |
+| Widget timeline (morning → heading home → tomorrow) | `src/widgets/sync.ts` |
+| Background refresh | `src/tasks/background.ts` |
+| Looks (Blush, Stone, Night) | `src/theme/skins.ts` |
+
+**Your feels like.** The forecast's standard "feels like" (apparent temperature) for the hours you're out, adjusted by about 1.5° per step of "I run cold/warm", minus 2° if you cycle or 1° if you wait for a bus. Every "bit chilly / too warm" tap moves it one step.
+
+**The widget** is written in React using Expo UI's SwiftUI components and runs natively. The app works out the whole day once and gives iOS a timeline, so the widget switches from the morning view to "heading home" (2 hours before you leave work) to tomorrow's outfit (after you get home) without the app being open. A background task refreshes the forecast a few times a day.
+
+---
+
+## Before launch
+
+- **Weather licence.** Open-Meteo's free API is for non-commercial use. Before charging or launching publicly, switch to their paid plan, or to Apple WeatherKit (free up to 500,000 calls a month with your developer account).
+- **App Store listing.** You'll need screenshots (the canvas designs work), a privacy policy URL (location is only used for weather, nothing is collected), and a support URL.
+- **Android.** The app runs on Android, but the widgets are iPhone-only for now.
+
+## Developing
+
+```bash
+npm install
+npx expo start          # needs a development build for widgets; Expo Go works for the screens only
+npx tsc --noEmit        # typecheck
+npx expo lint           # lint
+```

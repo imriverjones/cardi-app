@@ -1,18 +1,50 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import {
+  Figtree_500Medium,
+  Figtree_600SemiBold,
+  Figtree_700Bold,
+  Figtree_800ExtraBold,
+  Figtree_900Black,
+  useFonts,
+} from '@expo-google-fonts/figtree';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { AppProvider, useApp } from '@/state/app-state';
+import { registerBackgroundRefresh } from '@/tasks/background';
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+function Root() {
+  const { ready, palette } = useApp();
+  const [fontsLoaded] = useFonts({ Figtree_500Medium, Figtree_600SemiBold, Figtree_700Bold, Figtree_800ExtraBold, Figtree_900Black });
+
+  useEffect(() => {
+    if (ready && fontsLoaded) SplashScreen.hideAsync().catch(() => {});
+  }, [ready, fontsLoaded]);
+  useEffect(() => {
+    registerBackgroundRefresh();
+  }, []);
+
+  if (!ready || !fontsLoaded) return null;
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <>
+      <StatusBar style={palette.dark ? 'light' : 'dark'} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.bg2 } }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="onboarding" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
+        <Stack.Screen name="story" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
+        <Stack.Screen name="place" options={{ presentation: 'formSheet', sheetAllowedDetents: [0.9], sheetGrabberVisible: true }} />
+      </Stack>
+    </>
+  );
+}
+
+export default function Layout() {
+  return (
+    <AppProvider>
+      <Root />
+    </AppProvider>
   );
 }
