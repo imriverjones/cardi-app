@@ -100,6 +100,8 @@ export default function Onboarding() {
     update({ onboarded: true });
     setTimeout(() => refresh(true), 100);
     router.replace('/');
+    // Best moment to ask: they've just seen what Cardi does.
+    setTimeout(() => router.push('/widgets'), 1400);
   };
 
   const askLocation = async () => {

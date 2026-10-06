@@ -7,6 +7,7 @@ import { Outfit, Sun, Umbrella, Waves } from '@/components/art';
 import { DayRing } from '@/components/day-ring';
 import { buildStories, seenStories, type StoryKind } from '@/components/stories';
 import { Box, Pill, T, tap, Wordmark } from '@/components/ui';
+import { LockPreview } from '@/components/widget-preview';
 import { fmtHour, localHourOf, localDayKey, MOVE, uvAdvice } from '@/engine/advice';
 import { useNow } from '@/components/use-now';
 import { useApp } from '@/state/app-state';
@@ -25,7 +26,7 @@ function StoryThumb({ kind, palette, art }: { kind: StoryKind; palette: Palette;
 }
 
 export default function Today() {
-  const { advice: a, settings: s, palette: p, status, error, refresh, feedback, lastFeedback, forecast } = useApp();
+  const { advice: a, settings: s, palette: p, status, error, refresh, feedback, lastFeedback, forecast, update } = useApp();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const [refreshing, setRefreshing] = useState(false);
@@ -66,6 +67,7 @@ export default function Today() {
   const ringSize = Math.min(width - 40, 320);
   const diff = a.mine !== a.standard;
   const curlyHair = s.cover.hair && s.hair !== 'short';
+  const showWidgetCard = !s.widgetAdded && now > s.widgetSnoozeUntil;
 
   const cards: { b: string; bg: string; c: string; s: string; m: string }[] = [];
   if (s.cover.outfit) cards.push({ b: 'WEAR', bg: p.tLayer, c: p.dLayer, s: a.wear, m: a.warmUp ? `${a.mine}° now, ${a.lunch}° by lunch` : a.windy ? 'Breezy, so zip it up' : 'One good layer does it' });
@@ -203,6 +205,47 @@ export default function Today() {
           )}
         </View>
       </View>
+
+      {showWidgetCard && (
+        <View style={{ paddingHorizontal: 20, marginTop: 22 }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Add Cardi to your Lock Screen. Show me how"
+            onPress={() => {
+              tap();
+              router.push('/widgets');
+            }}
+            style={({ pressed }) => ({ backgroundColor: p.paper, borderRadius: 24, borderWidth: 1, borderColor: p.line, padding: 14, flexDirection: 'row', gap: 14, alignItems: 'center', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+            <View style={{ width: 118 }}>
+              <LockPreview a={a} s={s} scale={0.5} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+              <T w="heavy" size={16} style={{ lineHeight: 20 }}>
+                See this without opening the app
+              </T>
+              <T size={13} color={p.ink2} style={{ lineHeight: 18 }}>
+                Add Cardi to your Lock Screen. Takes 20 seconds.
+              </T>
+              <T w="bold" size={13.5} color={p.accentText} style={{ marginTop: 2 }}>
+                Show me how ›
+              </T>
+            </View>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Hide for now"
+            hitSlop={10}
+            onPress={() => {
+              tap();
+              update({ widgetSnoozeUntil: now + 3 * 864e5 });
+            }}
+            style={{ position: 'absolute', right: 28, top: 8, width: 26, height: 26, borderRadius: 13, backgroundColor: p.field, alignItems: 'center', justifyContent: 'center' }}>
+            <T w="bold" size={13} color={p.ink3}>
+              ✕
+            </T>
+          </Pressable>
+        </View>
+      )}
 
       <View style={{ paddingHorizontal: 20, marginTop: 22, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <T w="heavy" size={18}>

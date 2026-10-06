@@ -3,39 +3,39 @@ import type { SFSymbol } from 'sf-symbols-typescript';
 import { advise, fmtClock, fmtHour, localDayKey, timeAt, type Advice } from '@/engine/advice';
 import type { Forecast, Settings } from '@/engine/types';
 
-import type { CardiWidgetProps, Tone } from './CardiWidget';
+import type { CardiWidgetProps } from './CardiWidget';
 
-const OUTFIT_SYMBOL: Record<Advice['step']['art'], SFSymbol> = {
+export const OUTFIT_SYMBOL: Record<Advice['step']['art'], SFSymbol> = {
   coat: 'coat.fill',
   jacket: 'jacket.fill',
   knit: 'tshirt.fill',
   tee: 'tshirt.fill',
 };
 
-function bringIcons(a: Advice, s: Settings): SFSymbol[] {
-  const icons: SFSymbol[] = [];
-  if (a.brolly) icons.push('umbrella.fill');
-  if (s.cover.skin && a.uv >= 3) icons.push(a.uv >= 6 ? 'sunglasses.fill' : 'sun.max.fill');
-  if (s.cover.hair && a.frizz >= 4 && a.curly) icons.push('humidity.fill');
-  if (icons.length < 3 && a.windy) icons.push('wind');
-  if (!icons.length) icons.push(a.step.art === 'tee' ? 'sun.max.fill' : 'checkmark');
-  return icons.slice(0, 3);
-}
+type Alert = CardiWidgetProps['alerts'][number];
 
-function lines(a: Advice, s: Settings, mode: CardiWidgetProps['mode']) {
-  const out: { tone: Tone; text: string }[] = [];
+const MOVE_SYMBOL: Record<Settings['move'], SFSymbol> = { walk: 'figure.walk', cycle: 'bicycle', transit: 'tram.fill' };
+const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+
+/**
+ * The things worth acting on, most important first. The Lock Screen shows the top two,
+ * so each one is a few words someone can take in at a glance.
+ */
+export function alerts(a: Advice, s: Settings, mode: CardiWidgetProps['mode']): Alert[] {
+  const out: Alert[] = [];
+  const rainAt = fmtHour(a.rainStart ?? s.back);
   if (mode === 'home') {
-    out.push(a.brolly ? { tone: 'rain', text: `Rain from ${fmtHour(a.rainStart ?? s.back)}` } : { tone: 'rain', text: 'Dry on the way home' });
-    out.push({ tone: 'layer', text: `Feels ${a.homeFeels}° for you` });
+    out.push(a.rHome >= 40 ? { symbol: 'umbrella.fill', tone: 'rain', text: `Brolly · rain ${rainAt}` } : { symbol: 'checkmark.circle.fill', tone: 'green', text: 'Dry way home' });
   } else {
-    if (a.brolly) out.push({ tone: 'rain', text: `Brolly for ${fmtHour(a.rainStart ?? s.back)}` });
-    if (s.cover.hair && s.hair !== 'short') out.push({ tone: 'hair', text: a.hair.label });
-    if (s.cover.skin && a.uv >= 3) out.push({ tone: 'sun', text: `UV ${a.uv}, SPF ${a.uv >= 6 ? 'and shades' : 'at lunch'}` });
-    if (a.warmUp) out.push({ tone: 'layer', text: `${a.lunch}° by lunch, wear layers` });
+    if (a.brolly) out.push({ symbol: 'umbrella.fill', tone: 'rain', text: `Brolly · rain ${rainAt}` });
+    if (a.warmUp) out.push({ symbol: 'arrow.up.right', tone: 'layer', text: `Layers · ${a.lunch}° by lunch` });
+    if (s.cover.skin && a.uv >= 3) out.push({ symbol: 'sun.max.fill', tone: 'sun', text: `SPF · UV ${a.uv} at ${fmtHour(a.uvPeak)}` });
+    if (s.cover.hair && s.hair !== 'short' && a.frizz >= 4) out.push({ symbol: 'humidity.fill', tone: 'hair', text: cap(a.hair.short) });
   }
-  if (s.cover.commute) out.push({ tone: 'other', text: a.commute.s });
-  if (s.cover.washing) out.push({ tone: 'green', text: a.washing.s });
-  if (!out.length) out.push({ tone: 'other', text: `${a.lo}° to ${a.hi}° today` });
+  if (a.windy) out.push({ symbol: 'wind', tone: 'other', text: `Windy · ${a.maxWind} km/h` });
+  if (s.cover.commute) out.push({ symbol: MOVE_SYMBOL[s.move], tone: 'other', text: a.commute.s });
+  if (s.cover.washing) out.push({ symbol: 'hanger', tone: 'green', text: a.washing.s });
+  if (!out.length) out.push({ symbol: 'checkmark.circle.fill', tone: 'green', text: a.rOut < 40 && a.rHome < 40 ? 'Dry · nothing to carry' : 'Nothing to carry' });
   return out.slice(0, 3);
 }
 
@@ -72,8 +72,9 @@ function entry(a: Advice, s: Settings, mode: CardiWidgetProps['mode']): CardiWid
             : a.uv >= 6
               ? 'SPF on.'
               : 'Dry all day.';
-  const inlineParts = [`${feels}° for you`, a.step.short];
-  if (a.brolly) inlineParts.push(`Rain ${fmtHour(a.rainStart ?? s.back)}`);
+  const al = alerts(a, s, mode);
+  const top = al[0];
+  const inline = `${feels}° ${a.step.short}` + (top && top.tone !== 'green' ? ` · ${top.text.split(' · ')[0]}` : '');
   return {
     skin: s.skin,
     mode,
@@ -84,11 +85,11 @@ function entry(a: Advice, s: Settings, mode: CardiWidgetProps['mode']): CardiWid
     verdict,
     headline,
     headline2,
-    lines: lines(a, s, mode),
-    icons: bringIcons(a, s),
+    alerts: al,
+    short: a.step.short,
     outfitSymbol: OUTFIT_SYMBOL[a.step.art],
     tiles: tiles(a, s),
-    inline: inlineParts.join(' · '),
+    inline,
     frizz: s.cover.hair ? a.frizz : -1,
     hairLabel: a.hair.label,
   };

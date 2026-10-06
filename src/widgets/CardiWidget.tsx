@@ -29,10 +29,10 @@ export type CardiWidgetProps = {
   /** Large widget title, two lines */
   headline: string;
   headline2: string;
-  /** Up to three short lines with a coloured dot */
-  lines: { tone: Tone; text: string }[];
-  /** SF Symbols for what to bring (max 3) */
-  icons: SFSymbol[];
+  /** What to act on, most important first (max 3). Each is a few words with an SF Symbol. */
+  alerts: { symbol: SFSymbol; tone: Tone; text: string }[];
+  /** Outfit in a word or two, e.g. "T-shirt" */
+  short: string;
   /** Big SF Symbol for the outfit, shown on the large widget */
   outfitSymbol: SFSymbol;
   /** Four tiles on the large widget */
@@ -77,7 +77,7 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
     return <Text modifiers={[link]}>{props.inline}</Text>;
   }
   if (fam === 'accessoryCircular') {
-    // Gauge label slots don't render inside widgets, so the number sits on top of a bare ring.
+    // Gauge label slots do not render in widgets, so the number sits on top of a bare ring.
     return (
       <ZStack modifiers={[link]}>
         <Gauge
@@ -88,19 +88,29 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
         />
         <VStack spacing={-1}>
           <Text modifiers={[font({ size: 20, weight: 'bold', design: 'rounded' }), minimumScaleFactor(0.6), lineLimit(1)]}>{`${props.feels}°`}</Text>
-          <Text modifiers={[font({ size: 10, weight: 'semibold' })]}>you</Text>
+          <Image
+            systemName={props.alerts[0] && props.alerts[0].tone !== 'green' ? props.alerts[0].symbol : props.outfitSymbol}
+            size={11}
+          />
         </VStack>
       </ZStack>
     );
   }
   if (fam === 'accessoryRectangular') {
+    // Lock Screen: the outfit and number first, then the two things worth acting on.
     return (
-      <VStack alignment="leading" spacing={1} modifiers={[frame({ maxWidth: Infinity, alignment: 'leading' }), link]}>
-        <Text modifiers={[font({ size: 15, weight: 'bold', design: 'rounded' }), lineLimit(1)]}>{`${props.feels}° · ${props.verdict}`}</Text>
-        {props.lines.slice(0, 2).map((l, i) => (
-          <Text key={i} modifiers={[font({ size: 13 }), lineLimit(1)]}>
-            {l.text}
+      <VStack alignment="leading" spacing={2} modifiers={[frame({ maxWidth: Infinity, alignment: 'leading' }), link]}>
+        <HStack spacing={5}>
+          <Image systemName={props.outfitSymbol} size={15} />
+          <Text modifiers={[font({ size: 17, weight: 'bold', design: 'rounded' }), lineLimit(1), minimumScaleFactor(0.8)]}>
+            {`${props.feels}° ${props.short}`}
           </Text>
+        </HStack>
+        {props.alerts.slice(0, 2).map((al, i) => (
+          <HStack key={i} spacing={5}>
+            <Image systemName={al.symbol} size={11} />
+            <Text modifiers={[font({ size: 13, weight: 'medium' }), lineLimit(1), minimumScaleFactor(0.8)]}>{al.text}</Text>
+          </HStack>
         ))}
       </VStack>
     );
@@ -132,10 +142,10 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
         </Text>
         <Spacer />
         <HStack spacing={6}>
-          {props.icons.slice(0, 3).map((ic, i) => (
+          {props.alerts.slice(0, 3).map((al, i) => (
             <ZStack key={i}>
-              <Circle modifiers={[foregroundStyle(P.chip), frame({ width: 28, height: 28 })]} />
-              <Image systemName={ic} size={13} color={P.accent} />
+              <Circle modifiers={[foregroundStyle(fullColor ? T[al.tone][0] : P.chip), frame({ width: 28, height: 28 })]} />
+              <Image systemName={al.symbol} size={13} color={T[al.tone][1]} />
             </ZStack>
           ))}
         </HStack>
@@ -161,11 +171,11 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
           <Text modifiers={[font({ size: 20, weight: 'heavy', design: 'rounded' }), foregroundStyle(P.ink), lineLimit(1), minimumScaleFactor(0.7)]}>
             {props.verdict}
           </Text>
-          {props.lines.slice(0, 3).map((l, i) => (
+          {props.alerts.slice(0, 3).map((al, i) => (
             <HStack key={i} spacing={7}>
-              <Circle modifiers={[foregroundStyle(T[l.tone][2]), frame({ width: 8, height: 8 })]} />
+              <Image systemName={al.symbol} size={12} color={T[al.tone][2]} modifiers={[frame({ width: 16 })]} />
               <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(P.ink2), lineLimit(1), minimumScaleFactor(0.8)]}>
-                {l.text}
+                {al.text}
               </Text>
             </HStack>
           ))}
@@ -198,8 +208,8 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
         <RoundedRectangle cornerRadius={20} modifiers={[foregroundStyle(T.other[0])]} />
         <HStack spacing={18}>
           <Image systemName={props.outfitSymbol} size={64} color={T.layer[2]} />
-          {props.icons.slice(0, 3).map((ic, i) => (
-            <Image key={i} systemName={ic} size={30} color={T.other[2]} />
+          {props.alerts.slice(0, 3).map((al, i) => (
+            <Image key={i} systemName={al.symbol} size={30} color={T[al.tone][2]} />
           ))}
         </HStack>
       </ZStack>

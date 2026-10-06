@@ -111,6 +111,17 @@ export default function Me() {
       </T>
       <SkinPicker />
 
+      <Box style={{ marginTop: 14 }}>
+        <Pressable accessibilityRole="button" onPress={() => router.push('/widgets')}>
+          <Row last>
+            <T w="semibold">Lock Screen & Home Screen widgets</T>
+            <T w="bold" color={p.accentText}>
+              How to add ›
+            </T>
+          </Row>
+        </Pressable>
+      </Box>
+
       <View style={{ flexDirection: 'row', marginTop: 22 }}>
         <BigButton
           label="Run setup again"

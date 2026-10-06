@@ -29,6 +29,10 @@ export type Settings = {
   onboarded: boolean;
   /** null = use the phone's current location */
   place: Place | null;
+  /** The person said they've added a widget, so stop suggesting it */
+  widgetAdded: boolean;
+  /** Don't show the "add the widget" card again before this time (ms) */
+  widgetSnoozeUntil: number;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -43,6 +47,8 @@ export const DEFAULT_SETTINGS: Settings = {
   cover: { outfit: true, hair: true, skin: true, commute: false, kids: false, washing: false },
   onboarded: false,
   place: null,
+  widgetAdded: false,
+  widgetSnoozeUntil: 0,
 };
 
 /** One forecast hour. `t` is a unix timestamp in ms. */

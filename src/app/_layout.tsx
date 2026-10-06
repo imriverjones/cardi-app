@@ -36,6 +36,7 @@ function Root() {
         <Stack.Screen name="onboarding" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
         <Stack.Screen name="story" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="place" options={{ presentation: 'formSheet', sheetAllowedDetents: [0.9], sheetGrabberVisible: true }} />
+        <Stack.Screen name="widgets" options={{ presentation: 'formSheet', sheetAllowedDetents: [0.92], sheetGrabberVisible: true }} />
       </Stack>
     </>
   );
