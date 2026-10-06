@@ -1,4 +1,4 @@
-import { Gauge, HStack, Image, Spacer, Text, VStack, ZStack, Circle, RoundedRectangle } from '@expo/ui/swift-ui';
+import { Gauge, HStack, Image, Label, Spacer, Text, VStack, ZStack, RoundedRectangle } from '@expo/ui/swift-ui';
 import {
   containerBackground,
   font,
@@ -43,6 +43,8 @@ export type CardiWidgetProps = {
   tiles: { tone: Tone; title: string; value: string }[];
   /** One line for the Lock Screen above the clock */
   inline: string;
+  /** SF Symbol shown before the inline line */
+  inlineSymbol: SFSymbol;
   /** Hair score 0-10, or -1 when hair is switched off */
   frizz: number;
   hairLabel: string;
@@ -78,7 +80,7 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
 
   /* ---------- Lock Screen ---------- */
   if (fam === 'accessoryInline') {
-    return <Text modifiers={[link]}>{props.inline}</Text>;
+    return <Label title={props.inline} systemImage={props.inlineSymbol} modifiers={[link]} />;
   }
   if (fam === 'accessoryCircular') {
     // Gauge label slots do not render in widgets, so the number sits on top of a bare ring.
@@ -98,20 +100,14 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
     );
   }
   if (fam === 'accessoryRectangular') {
-    // Lock Screen: the outfit and number first, then the two things worth acting on.
+    // Lock Screen box: the verdict, then the two things worth acting on.
     return (
-      <VStack alignment="leading" spacing={2} modifiers={[frame({ maxWidth: Infinity, alignment: 'leading' }), link]}>
-        <HStack spacing={5}>
-          <Image systemName={props.outfitSymbol} size={15} />
-          <Text modifiers={[font({ size: 17, weight: 'bold', design: 'rounded' }), lineLimit(1), minimumScaleFactor(0.8)]}>
-            {`Feels ${props.feels}° · ${props.short}`}
-          </Text>
-        </HStack>
+      <VStack alignment="leading" spacing={1} modifiers={[frame({ maxWidth: Infinity, alignment: 'leading' }), link]}>
+        <Text modifiers={[font({ size: 16, weight: 'heavy', design: 'rounded' }), lineLimit(1), minimumScaleFactor(0.8)]}>{props.verdict}</Text>
         {props.alerts.slice(0, 2).map((al, i) => (
-          <HStack key={i} spacing={5}>
-            <Image systemName={al.symbol} size={11} />
-            <Text modifiers={[font({ size: 13, weight: 'medium' }), lineLimit(1), minimumScaleFactor(0.8)]}>{al.text}</Text>
-          </HStack>
+          <Text key={i} modifiers={[font({ size: 13, weight: 'semibold' }), lineLimit(1), minimumScaleFactor(0.8)]}>
+            {al.text}
+          </Text>
         ))}
       </VStack>
     );
@@ -119,6 +115,8 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
 
   /* ---------- Small ---------- */
   if (fam === 'systemSmall') {
+    // Also what StandBy shows at night: big number, verdict, one line.
+    const top = props.alerts[0];
     return (
       <VStack
         alignment="leading"
@@ -131,28 +129,20 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
           ),
           link,
         ]}>
-        <Text modifiers={[font({ size: 11, weight: 'heavy' }), foregroundStyle(P.accentText)]}>
-          {props.mode === 'tomorrow' ? 'TOMORROW, FOR YOU' : 'FEELS LIKE FOR YOU'}
+        <Text modifiers={[font({ size: 13, weight: 'bold', design: 'rounded' }), foregroundStyle(P.accentText), lineLimit(1), minimumScaleFactor(0.8)]}>
+          {props.label}
         </Text>
         <Spacer />
-        <Text modifiers={[font({ size: 54, weight: 'heavy', design: 'rounded' }), foregroundStyle(P.ink), minimumScaleFactor(0.6), lineLimit(1)]}>
+        <Text modifiers={[font({ size: 60, weight: 'black', design: 'rounded' }), foregroundStyle(P.accent), minimumScaleFactor(0.6), lineLimit(1)]}>
           {`${props.feels}°`}
         </Text>
-        <Text modifiers={[font({ size: 17, weight: 'bold', design: 'rounded' }), foregroundStyle(P.ink), lineLimit(1), minimumScaleFactor(0.7)]}>
+        <Spacer />
+        <Text modifiers={[font({ size: 20, weight: 'heavy', design: 'rounded' }), foregroundStyle(P.ink), lineLimit(1), minimumScaleFactor(0.7)]}>
           {props.verdict}
         </Text>
-        <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(P.ink3), lineLimit(1), minimumScaleFactor(0.8)]}>
-          {`${props.actual}° actual · ${props.when}`}
+        <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(P.ink3), lineLimit(1), minimumScaleFactor(0.8)]}>
+          {top ? top.text : `${props.actual}° actual`}
         </Text>
-        <Spacer />
-        <HStack spacing={6}>
-          {props.alerts.slice(0, 3).map((al, i) => (
-            <ZStack key={i}>
-              <Circle modifiers={[foregroundStyle(fullColor ? T[al.tone][0] : P.chip), frame({ width: 28, height: 28 })]} />
-              <Image systemName={al.symbol} size={13} color={T[al.tone][1]} />
-            </ZStack>
-          ))}
-        </HStack>
       </VStack>
     );
   }
@@ -169,7 +159,7 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
           <Text modifiers={[font({ size: 50, weight: 'heavy', design: 'rounded' }), foregroundStyle(P.ink), lineLimit(1), minimumScaleFactor(0.6)]}>
             {`${props.feels}°`}
           </Text>
-          <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(P.ink3)]}>feels like for you</Text>
+          {props.mode !== 'morning' && <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(P.ink3)]}>feels like for you</Text>}
           <Text modifiers={[font({ size: 11, weight: 'medium' }), foregroundStyle(P.ink3), lineLimit(1), minimumScaleFactor(0.8)]}>
             {`${props.actual}° actual · ${props.when}`}
           </Text>

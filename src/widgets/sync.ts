@@ -56,7 +56,7 @@ function entry(a: Advice, s: Settings, mode: CardiWidgetProps['mode']): CardiWid
   const feels = mode === 'home' ? a.homeFeels : a.mine;
   const verdict = mode === 'home' ? (a.brolly ? 'Brolly out' : a.step.day) : a.step.day;
   const label =
-    mode === 'morning' ? `${s.name ? `Morning, ${s.name}` : 'Today'} · ${a.place}` : mode === 'home' ? 'Heading home' : `Tomorrow, ${fmtClock(s.leave)}`;
+    mode === 'morning' ? 'Feels like for you' : mode === 'home' ? `Heading home, ${fmtClock(s.back)}` : `Tomorrow, ${fmtClock(s.leave)}`;
   const headline = mode === 'home' ? (a.brolly ? `Rain at ${fmtHour(a.rainStart ?? s.back)}.` : 'Dry way home.') : `${a.step.day}.`;
   const headline2 =
     mode === 'home'
@@ -73,8 +73,10 @@ function entry(a: Advice, s: Settings, mode: CardiWidgetProps['mode']): CardiWid
               ? 'SPF on.'
               : 'Dry all day.';
   const al = alerts(a, s, mode);
-  const top = al[0];
-  const inline = `Feels ${feels}° ${a.step.short}` + (top && top.tone !== 'green' ? ` · ${top.text.split(' · ')[0]}` : '');
+  // Above the clock: "Feels 7° · Jacket · Rain 5:30"
+  const rain = mode === 'home' ? a.rHome >= 40 : a.brolly;
+  const inline = `Feels ${feels}° · ${a.step.short}` + (rain ? ` · Rain ${fmtHour(a.rainStart ?? s.back)}` : '');
+  const inlineSymbol: SFSymbol = rain ? 'umbrella.fill' : OUTFIT_SYMBOL[a.step.art];
   return {
     skin: s.skin,
     mode,
@@ -92,6 +94,7 @@ function entry(a: Advice, s: Settings, mode: CardiWidgetProps['mode']): CardiWid
     outfitSymbol: OUTFIT_SYMBOL[a.step.art],
     tiles: tiles(a, s),
     inline,
+    inlineSymbol,
     frizz: s.cover.hair ? a.frizz : -1,
     hairLabel: a.hair.label,
   };
