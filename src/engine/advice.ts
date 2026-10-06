@@ -133,6 +133,12 @@ export type Advice = {
   outHours: number[];
   standard: number;
   mine: number;
+  /** Real air temperature at the moment `mine` describes */
+  actual: number;
+  /** Whether `mine` is the trip out or the trip home */
+  when: 'out' | 'home';
+  /** Real air temperature on the way home */
+  homeTemp: number;
   lunch: number;
   warmUp: boolean;
   windy: boolean;
@@ -172,6 +178,10 @@ export function advise(f: Forecast, s: Settings, dayKey = localDayKey(f, Date.no
 
   const standard = Math.round(Math.min(...out.map((h) => d[h].feels)));
   const mine = personal(standard, s);
+  // The hour that sets the number, so we can show the real temperature and say which trip it is.
+  const coldestHour = out.reduce((a, b) => (d[b].feels < d[a].feels ? b : a));
+  const actual = Math.round(d[coldestHour].temp);
+  const when: 'out' | 'home' = legOut.includes(coldestHour) ? 'out' : 'home';
   const maxWind = Math.round(Math.max(...out.map((h) => d[h].wind)));
   const windy = maxWind >= 30;
   const step = stepFor(mine, windy);
@@ -273,6 +283,9 @@ export function advise(f: Forecast, s: Settings, dayKey = localDayKey(f, Date.no
     outHours: out,
     standard,
     mine,
+    actual,
+    when,
+    homeTemp: Math.round(Math.min(...legHome.map((h) => d[h].temp))),
     lunch,
     warmUp,
     windy,

@@ -65,7 +65,6 @@ export default function Today() {
   const isToday = a.dayKey === localDayKey(forecast, now);
   const nowH = isToday ? localHourOf(forecast, now) : null;
   const ringSize = Math.min(width - 40, 320);
-  const diff = a.mine !== a.standard;
   const curlyHair = s.cover.hair && s.hair !== 'short';
   const showWidgetCard = !s.widgetAdded && now > s.widgetSnoozeUntil;
 
@@ -169,8 +168,10 @@ export default function Today() {
               {s.cover.outfit ? a.step.day : a.brolly ? 'Rain later' : 'Dry day'}
             </T>
             <T size={13} color={p.ink2} style={{ textAlign: 'center' }}>
-              {diff ? `${a.standard}° for most people · ` : ''}
-              {a.brolly ? `rain ${fmtHour(a.rainStart!)}` : 'dry all day'}
+              {`${a.actual}° actual · on your ${a.when === 'out' ? 'way out' : 'way home'}`}
+            </T>
+            <T size={13} color={p.ink2} style={{ textAlign: 'center' }}>
+              {a.brolly ? `Rain from ${fmtHour(a.rainStart!)}` : 'Dry all day'}
             </T>
             {stories.length > 0 && (
               <Pressable

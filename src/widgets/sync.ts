@@ -74,12 +74,14 @@ function entry(a: Advice, s: Settings, mode: CardiWidgetProps['mode']): CardiWid
               : 'Dry all day.';
   const al = alerts(a, s, mode);
   const top = al[0];
-  const inline = `${feels}° ${a.step.short}` + (top && top.tone !== 'green' ? ` · ${top.text.split(' · ')[0]}` : '');
+  const inline = `Feels ${feels}° ${a.step.short}` + (top && top.tone !== 'green' ? ` · ${top.text.split(' · ')[0]}` : '');
   return {
     skin: s.skin,
     mode,
     label,
     feels,
+    actual: mode === 'home' ? a.homeTemp : a.actual,
+    when: mode === 'home' || a.when === 'home' ? 'way home' : 'way out',
     lo: a.lo,
     hi: a.hi,
     verdict,

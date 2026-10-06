@@ -22,6 +22,10 @@ export type CardiWidgetProps = {
   label: string;
   /** Personal feels like for the moment this entry covers */
   feels: number;
+  /** Real air temperature at that moment */
+  actual: number;
+  /** "way out" or "way home": which trip the number is for */
+  when: string;
   lo: number;
   hi: number;
   /** "Jacket day" */
@@ -88,10 +92,7 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
         />
         <VStack spacing={-1}>
           <Text modifiers={[font({ size: 20, weight: 'bold', design: 'rounded' }), minimumScaleFactor(0.6), lineLimit(1)]}>{`${props.feels}°`}</Text>
-          <Image
-            systemName={props.alerts[0] && props.alerts[0].tone !== 'green' ? props.alerts[0].symbol : props.outfitSymbol}
-            size={11}
-          />
+          <Text modifiers={[font({ size: 10, weight: 'semibold' })]}>feels</Text>
         </VStack>
       </ZStack>
     );
@@ -103,7 +104,7 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
         <HStack spacing={5}>
           <Image systemName={props.outfitSymbol} size={15} />
           <Text modifiers={[font({ size: 17, weight: 'bold', design: 'rounded' }), lineLimit(1), minimumScaleFactor(0.8)]}>
-            {`${props.feels}° ${props.short}`}
+            {`Feels ${props.feels}° · ${props.short}`}
           </Text>
         </HStack>
         {props.alerts.slice(0, 2).map((al, i) => (
@@ -140,6 +141,9 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
         <Text modifiers={[font({ size: 17, weight: 'bold', design: 'rounded' }), foregroundStyle(P.ink), lineLimit(1), minimumScaleFactor(0.7)]}>
           {props.verdict}
         </Text>
+        <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(P.ink3), lineLimit(1), minimumScaleFactor(0.8)]}>
+          {`${props.actual}° actual · ${props.when}`}
+        </Text>
         <Spacer />
         <HStack spacing={6}>
           {props.alerts.slice(0, 3).map((al, i) => (
@@ -166,6 +170,9 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
             {`${props.feels}°`}
           </Text>
           <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(P.ink3)]}>feels like for you</Text>
+          <Text modifiers={[font({ size: 11, weight: 'medium' }), foregroundStyle(P.ink3), lineLimit(1), minimumScaleFactor(0.8)]}>
+            {`${props.actual}° actual · ${props.when}`}
+          </Text>
         </VStack>
         <VStack alignment="leading" spacing={7} modifiers={[frame({ maxWidth: Infinity, alignment: 'leading' })]}>
           <Text modifiers={[font({ size: 20, weight: 'heavy', design: 'rounded' }), foregroundStyle(P.ink), lineLimit(1), minimumScaleFactor(0.7)]}>
@@ -200,7 +207,8 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
         <Spacer />
         <VStack alignment="trailing" spacing={0}>
           <Text modifiers={[font({ size: 44, weight: 'heavy', design: 'rounded' }), foregroundStyle(P.ink)]}>{`${props.feels}°`}</Text>
-          <Text modifiers={[font({ size: 11, weight: 'bold' }), foregroundStyle(P.ink3)]}>for you</Text>
+          <Text modifiers={[font({ size: 11, weight: 'bold' }), foregroundStyle(P.ink3)]}>feels, for you</Text>
+          <Text modifiers={[font({ size: 11, weight: 'medium' }), foregroundStyle(P.ink3)]}>{`${props.actual}° actual`}</Text>
         </VStack>
       </HStack>
 
