@@ -3,7 +3,7 @@ import * as Location from 'expo-location';
 
 import type { Forecast, Hour, Place } from '@/engine/types';
 
-import { CardiWeather } from '../../modules/cardi-weather';
+import { CardiNative } from '../../modules/cardi-native';
 
 /*
  * Weather comes from Apple Weather (WeatherKit), so Cardi's numbers match the
@@ -11,7 +11,7 @@ import { CardiWeather } from '../../modules/cardi-weather';
  * error) it falls back to Open-Meteo, whose free tier is fine for testing.
  */
 const API = 'https://api.open-meteo.com/v1/forecast';
-const GEO = 'https://geocoding-api.open-meteo.com/v1/search';
+const GEO = 'https://geocoding-api.open-meteo.com/v1/search'; // only used where Apple Maps search isn't available
 const CACHE_KEY = 'cardi.forecast';
 const LAST_PLACE_KEY = 'cardi.lastPlace';
 const FRESH_MS = 30 * 60 * 1000;
@@ -47,9 +47,9 @@ function wmo(condition: string): number {
 }
 
 async function fromApple(place: Place): Promise<Forecast | null> {
-  if (!CardiWeather) return null;
+  if (!CardiNative) return null;
   try {
-    const r = await CardiWeather.hourlyAsync(place.lat, place.lon);
+    const r = await CardiNative.hourlyAsync(place.lat, place.lon);
     if (!r.hours.length) return null;
     const hours: Hour[] = r.hours.map((h) => ({ t: h.t, temp: h.temp, feels: h.feels, dew: h.dew, rain: h.rain, uv: h.uv, wind: h.wind, code: wmo(h.condition) }));
     return { place: place.name, lat: place.lat, lon: place.lon, utcOffsetSeconds: r.utcOffsetSeconds, fetchedAt: Date.now(), hours, source: 'apple' };
@@ -146,6 +146,13 @@ export async function lastPlace(): Promise<Place | null> {
 
 export async function searchPlaces(q: string): Promise<(Place & { detail: string })[]> {
   if (q.trim().length < 2) return [];
+  if (CardiNative) {
+    try {
+      return (await CardiNative.searchPlacesAsync(q.trim())).slice(0, 8);
+    } catch {
+      // Apple Maps search failed (offline, or nothing found): try the fallback below.
+    }
+  }
   const res = await fetch(`${GEO}?${new URLSearchParams({ name: q.trim(), count: '8', language: 'en', format: 'json' })}`);
   if (!res.ok) return [];
   const j = (await res.json()) as { results?: { name: string; latitude: number; longitude: number; admin1?: string; country?: string }[] };

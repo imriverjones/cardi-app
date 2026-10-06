@@ -8,6 +8,7 @@ import { SKINS, type Palette } from '@/theme/skins';
 import { cachedForecast, currentPlace, fetchForecast, isFresh } from '@/weather/forecast';
 import { scheduleMornings } from '@/notify/morning';
 import { syncCheckInSkin, syncWidgets, takeCheckInAnswer } from '@/widgets/sync';
+import { track } from '@/analytics';
 
 const SETTINGS_KEY = 'cardi.settings';
 
@@ -129,7 +130,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (state !== 'active' || !settingsRef.current.onboarded) return;
       refresh();
       const answer = await takeCheckInAnswer();
-      if (answer) feedback(answer);
+      if (answer) {
+        track('feels_feedback', { answer, from: 'widget' });
+        feedback(answer);
+      }
     });
     return () => sub.remove();
   }, [refresh, feedback]);

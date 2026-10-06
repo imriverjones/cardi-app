@@ -11,13 +11,14 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
+import { useTrackOpens } from '@/analytics/use-track-opens';
 import { AppProvider, useApp } from '@/state/app-state';
 import { registerBackgroundRefresh } from '@/tasks/background';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function Root() {
-  const { ready, palette } = useApp();
+  const { ready, palette, settings } = useApp();
   const [fontsLoaded] = useFonts({ Figtree_500Medium, Figtree_600SemiBold, Figtree_700Bold, Figtree_800ExtraBold, Figtree_900Black });
 
   useEffect(() => {
@@ -26,6 +27,7 @@ function Root() {
   useEffect(() => {
     registerBackgroundRefresh();
   }, []);
+  useTrackOpens(settings, ready);
 
   if (!ready || !fontsLoaded) return null;
   return (
@@ -34,7 +36,6 @@ function Root() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.bg2 } }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="onboarding" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
-        <Stack.Screen name="story" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="place" options={{ presentation: 'formSheet', sheetAllowedDetents: [0.9], sheetGrabberVisible: true }} />
         <Stack.Screen name="widgets" options={{ presentation: 'formSheet', sheetAllowedDetents: [0.92], sheetGrabberVisible: true }} />
         <Stack.Screen name="day" />

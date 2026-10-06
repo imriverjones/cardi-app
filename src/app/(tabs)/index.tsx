@@ -10,6 +10,7 @@ import { WeatherCredit } from '@/components/weather-credit';
 import { LockPreview } from '@/components/widget-preview';
 import { localDayKey, localHourOf } from '@/engine/advice';
 import { useApp } from '@/state/app-state';
+import { track } from '@/analytics';
 
 export default function Today() {
   const { advice: a, settings: s, palette: p, status, error, refresh, feedback, lastFeedback, forecast, update } = useApp();
@@ -134,6 +135,7 @@ export default function Today() {
             hitSlop={10}
             onPress={() => {
               tap();
+              track('widget_card_hidden');
               update({ widgetSnoozeUntil: now + 3 * 864e5 });
             }}
             style={{ position: 'absolute', right: 8, top: 8, width: 26, height: 26, borderRadius: 13, backgroundColor: p.field, alignItems: 'center', justifyContent: 'center' }}>
@@ -150,9 +152,23 @@ export default function Today() {
             How did today feel?
           </T>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            <Pill label="Bit chilly" on={lastFeedback === 'cold'} onPress={() => feedback('cold')} />
-            <Pill label="Spot on" on={lastFeedback === 'ok'} onPress={() => feedback('ok')} />
-            <Pill label="Too warm" on={lastFeedback === 'warm'} onPress={() => feedback('warm')} />
+            {(
+              [
+                ['cold', 'Bit chilly'],
+                ['ok', 'Spot on'],
+                ['warm', 'Too warm'],
+              ] as const
+            ).map(([answer, label]) => (
+              <Pill
+                key={answer}
+                label={label}
+                on={lastFeedback === answer}
+                onPress={() => {
+                  track('feels_feedback', { answer, from: 'app' });
+                  feedback(answer);
+                }}
+              />
+            ))}
           </View>
           <T size={13} color={p.ink2} style={{ marginTop: 10 }}>
             {fbText}

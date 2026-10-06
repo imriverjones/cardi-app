@@ -87,13 +87,15 @@ Once step 3 has worked, every push to `main` can build and send to TestFlight on
 |---|---|
 | Screens (Today, Week, Me, setup, stories, place search) | `src/app/` |
 | Advice engine: personal feels like, outfit, hair, rain, UV, commute, school run, drying day | `src/engine/advice.ts` |
-| Weather (Apple Weather, Open-Meteo fallback) and location | `src/weather/forecast.ts`, `modules/cardi-weather` |
+| Weather (Apple Weather, Open-Meteo fallback) and location | `src/weather/forecast.ts`, `modules/cardi-native` |
 | Settings and app state | `src/state/app-state.tsx` |
 | Home and Lock Screen widget | `src/widgets/CardiWidget.tsx` |
 | Interactive check-in widget | `src/widgets/CheckInWidget.tsx` |
 | Widget timeline (morning → heading home → tomorrow) | `src/widgets/sync.ts` |
 | Background refresh | `src/tasks/background.ts` |
 | Looks (Blush, Stone, Night) | `src/theme/skins.ts` |
+| Anonymous usage numbers (Aptabase): opens by source, widgets on screen, setup, feedback | `src/analytics/` |
+| Apple Weather, Apple Maps city search, installed widgets | `modules/cardi-native` |
 
 **Your feels like.** The forecast's standard "feels like" (apparent temperature) for the hours you're out, adjusted by about 1.5° per step of "I run cold/warm", minus 2° if you cycle or 1° if you wait for a bus. Every "bit chilly / too warm" tap moves it one step.
 
@@ -103,9 +105,13 @@ Once step 3 has worked, every push to `main` can build and send to TestFlight on
 
 ## Before launch
 
-- **Weather.** Cardi uses Apple Weather (WeatherKit, free up to 500,000 calls a month with your developer account), through the small native module in `modules/cardi-weather`. If it isn't available it falls back to Open-Meteo, whose free tier is non-commercial. WeatherKit must be ticked for the app ID under both Capabilities and App Services at developer.apple.com.
+- **Weather.** Cardi uses Apple Weather (WeatherKit, free up to 500,000 calls a month with your developer account), through the small native module in `modules/cardi-native`. If it isn't available it falls back to Open-Meteo, whose free tier is non-commercial. WeatherKit must be ticked for the app ID under both Capabilities and App Services at developer.apple.com.
 - **App Store listing.** You'll need screenshots (the canvas designs work), a privacy policy URL (location is only used for weather, nothing is collected), and a support URL.
 - **Android.** The app runs on Android, but the widgets are iPhone-only for now.
+
+## Usage numbers
+
+Sign up free at aptabase.com, create an app called Cardi, and paste its App Key into `APTABASE_KEY` in `src/analytics/index.ts`. Until then nothing is sent. Events: `app_open` (source: icon, widget or notification; widget size), `daily` (widgets on screen, Lock Screen or Home Screen, features switched on), `onboarding_step`, `onboarding_done`, `widget_help_opened`, `widget_help_done`, `widget_help_later`, `widget_card_hidden`, `feels_feedback`, `day_opened`, `notify_changed`.
 
 ## Developing
 

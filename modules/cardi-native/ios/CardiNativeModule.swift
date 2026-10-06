@@ -1,11 +1,13 @@
 import CoreLocation
 import ExpoModulesCore
+import MapKit
 import WeatherKit
+import WidgetKit
 
-/// Hourly forecast from Apple Weather, in the shape Cardi's engine uses.
-public class CardiWeatherModule: Module {
+/// The few things Cardi needs from iOS directly: Apple Weather, place search, and which widgets are on screen.
+public class CardiNativeModule: Module {
   public func definition() -> ModuleDefinition {
-    Name("CardiWeather")
+    Name("CardiNative")
 
     /// Eight days of hours from local midnight today, plus the place's UTC offset.
     AsyncFunction("hourlyAsync") { (lat: Double, lon: Double) async throws -> [String: Any] in
@@ -59,6 +61,45 @@ public class CardiWeatherModule: Module {
         "markDarkURL": a.combinedMarkDarkURL.absoluteString,
         "serviceName": a.serviceName,
       ]
+    }
+
+    /// City search with Apple Maps, so place names match the rest of iOS.
+    AsyncFunction("searchPlacesAsync") { (query: String) async throws -> [[String: Any]] in
+      let request = MKLocalSearch.Request()
+      request.naturalLanguageQuery = query
+      request.resultTypes = .address
+      let response = try await MKLocalSearch(request: request).start()
+      var seen = Set<String>()
+      var out: [[String: Any]] = []
+      for item in response.mapItems {
+        let p = item.placemark
+        let name = p.locality ?? item.name ?? p.name ?? query
+        let detail = [p.administrativeArea, p.country].compactMap { $0 }.joined(separator: ", ")
+        let key = "\(name)|\(detail)"
+        if seen.contains(key) { continue }
+        seen.insert(key)
+        out.append([
+          "name": name,
+          "detail": detail,
+          "lat": p.coordinate.latitude,
+          "lon": p.coordinate.longitude,
+        ])
+      }
+      return out
+    }
+
+    /// Which Cardi widgets are on the Home Screen, Lock Screen or StandBy right now, as "kind:family".
+    AsyncFunction("widgetsAsync") { () async throws -> [String] in
+      try await withCheckedThrowingContinuation { (cont: CheckedContinuation<[String], Error>) in
+        WidgetCenter.shared.getCurrentConfigurations { result in
+          switch result {
+          case .success(let infos):
+            cont.resume(returning: infos.map { "\($0.kind):\(String(describing: $0.family))" })
+          case .failure(let error):
+            cont.resume(throwing: error)
+          }
+        }
+      }
     }
   }
 }

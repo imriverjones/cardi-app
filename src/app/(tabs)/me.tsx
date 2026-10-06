@@ -7,6 +7,7 @@ import { BigButton, Box, Row, Seg, T, tap } from '@/components/ui';
 import { askToNotify } from '@/notify/morning';
 import { useApp } from '@/state/app-state';
 import { FONT } from '@/theme/skins';
+import { track } from '@/analytics';
 
 export default function Me() {
   const { settings: s, update, palette: p, forecast } = useApp();
@@ -120,8 +121,12 @@ export default function Me() {
               ['off', 'Off'],
             ]}
             onChange={async (v) => {
-              if (v === 'off') return update({ notify: false });
+              if (v === 'off') {
+                track('notify_changed', { on: false });
+                return update({ notify: false });
+              }
               const ok = await askToNotify();
+              track('notify_changed', { on: ok, allowed: ok });
               update({ notify: ok });
             }}
           />

@@ -7,7 +7,7 @@ import { T } from '@/components/ui';
 import type { Forecast } from '@/engine/types';
 import { useApp } from '@/state/app-state';
 
-import { CardiWeather, type AppleAttribution } from '../../modules/cardi-weather';
+import { CardiNative, type AppleAttribution } from '../../modules/cardi-native';
 
 const APPLE_LEGAL = 'https://weatherkit.apple.com/legal-attribution.html';
 let cached: AppleAttribution | null = null;
@@ -19,8 +19,8 @@ export function WeatherCredit({ forecast }: { forecast: Forecast }) {
   const apple = forecast.source === 'apple';
 
   useEffect(() => {
-    if (!apple || cached || !CardiWeather) return;
-    CardiWeather.attributionAsync()
+    if (!apple || cached || !CardiNative) return;
+    CardiNative.attributionAsync()
       .then((a) => {
         cached = a;
         setAttr(a);

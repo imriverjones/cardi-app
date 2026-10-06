@@ -9,6 +9,7 @@ import { useNow } from '@/components/use-now';
 import { localDayKey, week } from '@/engine/advice';
 import { useApp } from '@/state/app-state';
 import { alerts } from '@/widgets/sync';
+import { track } from '@/analytics';
 
 export default function Week() {
   const { forecast, settings: s, palette: p } = useApp();
@@ -38,6 +39,7 @@ export default function Week() {
               accessibilityLabel={`${name}: feels ${d.mine} degrees, ${d.step.day}. ${top.text}`}
               onPress={() => {
                 tap();
+                track('day_opened', { daysAhead: d.dayKey - today });
                 router.push({ pathname: '/day', params: { k: String(d.dayKey) } });
               }}
               style={({ pressed }) => ({

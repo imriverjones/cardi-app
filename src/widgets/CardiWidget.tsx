@@ -76,7 +76,7 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
   const fam = env.widgetFamily;
   const fullColor = env.widgetRenderingMode == null || env.widgetRenderingMode === 'fullColor';
   const bg = containerBackground(P.bg, 'widget');
-  const link = widgetURL('cardi://');
+  const link = widgetURL(`cardi://?from=widget&size=${fam}`);
 
   /* ---------- Lock Screen ---------- */
   if (fam === 'accessoryInline') {

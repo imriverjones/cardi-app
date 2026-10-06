@@ -11,6 +11,7 @@ import { BigButton, Box, Row, Seg, T, tap, Wordmark } from '@/components/ui';
 import { askToNotify } from '@/notify/morning';
 import { useApp } from '@/state/app-state';
 import { FONT } from '@/theme/skins';
+import { track } from '@/analytics';
 
 type StepId = 'welcome' | 'name' | 'cover' | 'wear' | 'hair' | 'day' | 'feel' | 'location' | 'morning' | 'look';
 
@@ -97,8 +98,13 @@ export default function Onboarding() {
   const last = idx === steps.length - 1;
   const canGo = step !== 'cover' || Object.values(s.cover).some(Boolean);
 
+  useEffect(() => {
+    track('onboarding_step', { step, index: idx });
+  }, [step, idx]);
+
   const next = () => {
     if (!last) return setI(idx + 1);
+    track('onboarding_done', { wear: s.wear, hair: s.cover.hair ? s.hair : 'off', notify: s.notify, look: s.skin, location: s.place ? 'city' : 'gps' });
     update({ onboarded: true });
     setTimeout(() => refresh(true), 100);
     router.replace('/');

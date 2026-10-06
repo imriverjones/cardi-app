@@ -69,7 +69,15 @@ No account or login is needed. Location is optional: on the location step, tap "
 
 ## App Privacy ("nutrition label")
 
-Choose **Data Not Collected**. Cardi has no account, analytics or ads, and settings stay on the phone. Coordinates go to Apple Weather (or Open-Meteo) only to fetch the forecast and aren't stored by Cardi, which falls outside Apple's definition of "collect". The waitlist lives on the website, not in the app, so it doesn't belong here.
+Cardi sends anonymous usage events (Aptabase), so the answer is no longer "Data Not Collected". Answer:
+
+1. **Do you or your third-party partners collect data from this app?** Yes.
+2. Tick **Usage Data → Product Interaction** only.
+3. For Product Interaction: **Analytics**: yes. Everything else: no.
+4. **Linked to the user's identity?** No.
+5. **Used for tracking?** No.
+
+The label then reads "Data Not Linked to You: Usage Data". Location is not collected: coordinates go to Apple Weather (or Open-Meteo) only to fetch the forecast and Cardi doesn't keep them.
 
 ## Screenshots
 

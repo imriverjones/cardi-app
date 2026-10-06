@@ -14,10 +14,15 @@ export type AppleHour = {
 
 export type AppleAttribution = { legalPageURL: string; markLightURL: string; markDarkURL: string; serviceName: string };
 
-type CardiWeatherNative = {
+export type ApplePlace = { name: string; detail: string; lat: number; lon: number };
+
+type CardiNativeModule = {
   hourlyAsync(lat: number, lon: number): Promise<{ utcOffsetSeconds: number; hours: AppleHour[] }>;
   attributionAsync(): Promise<AppleAttribution>;
+  searchPlacesAsync(query: string): Promise<ApplePlace[]>;
+  /** Installed widgets as "kind:family", e.g. "CardiWidget:accessoryRectangular" */
+  widgetsAsync(): Promise<string[]>;
 };
 
-/** null in Expo Go, on web and on Android, where Apple Weather isn't available. */
-export const CardiWeather = requireOptionalNativeModule<CardiWeatherNative>('CardiWeather');
+/** null in Expo Go, on web and on Android. Every caller has a fallback. */
+export const CardiNative = requireOptionalNativeModule<CardiNativeModule>('CardiNative');

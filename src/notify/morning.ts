@@ -52,7 +52,7 @@ export async function scheduleMornings(f: Forecast, s: Settings, now = Date.now(
       const a = advise(f, s, today + d);
       if (!a) continue;
       await Notifications.scheduleNotificationAsync({
-        content: { ...morningMessage(a, s), data: { url: 'cardi://' } },
+        content: { ...morningMessage(a, s), data: { url: 'cardi://?from=notification' } },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(at) },
       });
     }

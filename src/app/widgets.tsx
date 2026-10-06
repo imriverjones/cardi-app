@@ -1,11 +1,12 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BigButton, Seg, T } from '@/components/ui';
 import { LockPreview } from '@/components/widget-preview';
 import { useApp } from '@/state/app-state';
+import { track } from '@/analytics';
 
 const SNOOZE_DAYS = 3;
 
@@ -29,11 +30,17 @@ export default function WidgetsScreen() {
   const insets = useSafeAreaInsets();
   const [where, setWhere] = useState<'lock' | 'home'>('lock');
 
+  useEffect(() => {
+    track('widget_help_opened');
+  }, []);
+
   const done = () => {
+    track('widget_help_done');
     update({ widgetAdded: true });
     router.back();
   };
   const later = () => {
+    track('widget_help_later');
     update({ widgetSnoozeUntil: Date.now() + SNOOZE_DAYS * 864e5 });
     router.back();
   };

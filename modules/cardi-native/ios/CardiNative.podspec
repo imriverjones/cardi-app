@@ -1,8 +1,8 @@
 Pod::Spec.new do |s|
-  s.name           = 'CardiWeather'
+  s.name           = 'CardiNative'
   s.version        = '1.0.0'
-  s.summary        = 'Apple Weather (WeatherKit) for Cardi'
-  s.description    = 'Hourly forecast from Apple Weather for the Cardi app'
+  s.summary        = 'Apple Weather, place search and widget info for Cardi'
+  s.description    = 'Apple Weather forecast, MapKit place search and installed widget info for the Cardi app'
   s.license        = 'MIT'
   s.author         = 'River Jones'
   s.homepage       = 'https://github.com/imriverjones/cardi-app'
@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
   s.static_framework = true
 
   s.dependency 'ExpoModulesCore'
-  s.frameworks = 'WeatherKit', 'CoreLocation'
+  s.frameworks = 'WeatherKit', 'CoreLocation', 'MapKit', 'WidgetKit'
 
   s.source_files = "**/*.{h,m,swift}"
   s.pod_target_xcconfig = {
