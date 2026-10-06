@@ -158,6 +158,8 @@ export type Advice = {
   frizz: number;
   curly: boolean;
   hair: { label: string; short: string; tip: string };
+  /** Something for your hair in the bag (claw clip, hair tie), or null */
+  hairBag: string | null;
   commute: Line;
   kids: Line;
   washing: Line;
@@ -208,6 +210,10 @@ export function advise(f: Forecast, s: Settings, dayKey = localDayKey(f, Date.no
   let frizz = Math.max(0, Math.min(10, Math.round((dew - 2) / 1.8)));
   if (!curly) frizz = Math.max(0, frizz - 2);
 
+  // Hair tips follow how you dress, not a gender: claw clips and blow-dries only for "dresses & skirts",
+  // a hair tie for "a mix", and plain product tips for "trousers & jeans".
+  const style = s.wear;
+  const pick = (dresses: string, mix: string, trousers: string) => (style === 'dresses' ? dresses : style === 'mix' ? mix : trousers);
   let hair: Advice['hair'];
   if (s.hair === 'short') {
     hair = { label: 'Low-fuss hair day', short: 'easy hair day', tip: maxWind >= 30 ? 'Windy out. A bit of product keeps it in place.' : 'Nothing to worry about today.' };
@@ -215,7 +221,9 @@ export function advise(f: Forecast, s: Settings, dayKey = localDayKey(f, Date.no
     hair = {
       label: 'Static-y day',
       short: 'static-y hair day',
-      tip: curly ? 'Dry air today. Seal in moisture with a leave-in and skip the brush.' : 'Flyaways likely. A drop of hair oil keeps them down.',
+      tip: curly
+        ? pick('Dry air today. Seal in moisture with a leave-in and skip the brush.', 'Dry air today. A leave-in keeps it soft.', 'Dry air today. A bit of leave-in keeps it soft.')
+        : 'Flyaways likely. A little product keeps them down.',
     };
   } else if (frizz <= 3) {
     hair = { label: 'Good hair day', short: 'good hair day', tip: "Air's just right. Wear it however you like." };
@@ -223,13 +231,17 @@ export function advise(f: Forecast, s: Settings, dayKey = localDayKey(f, Date.no
     hair = {
       label: 'Almost a good hair day',
       short: 'almost a good hair day',
-      tip: curly ? 'Curls get puffy after lunch. Leave-in now, claw clip in your bag.' : 'Might lose a little volume later. Texture spray helps.',
+      tip: curly
+        ? pick('Curls get puffy after lunch. Leave-in now, claw clip in your bag.', 'Gets puffy after lunch. Leave-in now, hair tie in your bag.', 'Gets puffy after lunch. A bit of product before you go.')
+        : 'Might go a bit flat later. A little texture product helps.',
     };
   } else {
     hair = {
       label: curly ? 'Frizz alert' : 'Flat hair day',
       short: curly ? 'frizz alert' : 'flat hair day',
-      tip: curly ? 'Very humid. Anti-frizz serum, or wear it up and own it.' : 'Humid air will flatten it. Skip the blow-dry, try a sleek style.',
+      tip: curly
+        ? pick('Very humid. Anti-frizz serum, or wear it up and own it.', 'Very humid. Anti-frizz product, or tie it back.', 'Very humid. Product in before you go, or a cap if it gets wild.')
+        : pick('Humid air will flatten it. Skip the blow-dry, try a sleek style.', 'Humid air will flatten it. A matte product holds best.', 'Humid air will flatten it. A matte product holds best.'),
     };
   }
 
@@ -273,7 +285,8 @@ export function advise(f: Forecast, s: Settings, dayKey = localDayKey(f, Date.no
   if (s.cover.outfit && step.bag) bag.push(step.bag);
   if (brolly) bag.push(s.cover.commute && s.move === 'cycle' ? 'Waterproofs' : 'Brolly');
   if (s.cover.skin && uv >= 3) bag.push('SPF');
-  if (s.cover.hair && frizz >= 4 && curly) bag.push('Claw clip');
+  const hairBag = s.cover.hair && frizz >= 4 && curly ? (style === 'dresses' ? 'Claw clip' : style === 'mix' ? 'Hair tie' : null) : null;
+  if (hairBag) bag.push(hairBag);
 
   const temps = d.map((h) => h.temp);
   return {
@@ -305,6 +318,7 @@ export function advise(f: Forecast, s: Settings, dayKey = localDayKey(f, Date.no
     frizz,
     curly,
     hair,
+    hairBag,
     commute,
     kids,
     washing,

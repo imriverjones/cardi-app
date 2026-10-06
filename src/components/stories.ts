@@ -16,7 +16,7 @@ export function buildStories(a: Advice, s: Settings): Story[] {
         ? `It feels ${a.mine}° to you when you're out, but ${a.lunch}° by lunch, so wear layers you can peel off.`
         : `It feels around ${a.mine}° to you while you're out.`) +
       (a.brolly ? ` ${cyc ? 'Waterproofs are' : "The brolly's"} for ${fmtHour(a.rainStart ?? s.back)}.` : '') +
-      (s.cover.hair && a.frizz >= 4 && a.curly ? " And the claw clip's for when your curls get ideas." : '');
+      (a.hairBag ? ` And the ${a.hairBag.toLowerCase()}'s for when your hair gets ideas.` : '');
     list.push({ id: 'outfit', label: 'Outfit', title: a.wear, body });
   }
   if (s.cover.hair && s.hair !== 'short') list.push({ id: 'hair', label: 'Hair', title: a.hair.label, body: a.hair.tip });

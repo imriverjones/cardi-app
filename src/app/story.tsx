@@ -13,7 +13,7 @@ import type { Palette } from '@/theme/skins';
 const DURATION = 6000;
 
 function Art({ story, p, size }: { story: Story; p: Palette; size: number }) {
-  const { advice: a, settings: s } = useApp();
+  const { advice: a } = useApp();
   if (!a) return null;
   const blob = (
     <Svg width={size} height={size} viewBox="0 0 350 350" style={{ position: 'absolute' }}>
@@ -30,7 +30,7 @@ function Art({ story, p, size }: { story: Story; p: Palette; size: number }) {
             <Umbrella size={size * 0.24} />
           </View>
         )}
-        {s.cover.hair && a.frizz >= 4 && a.curly && (
+        {a.hairBag === 'Claw clip' && (
           <View style={{ position: 'absolute', left: size * 0.06, bottom: size * 0.1, transform: [{ rotate: '-12deg' }] }}>
             <Clip size={size * 0.22} />
           </View>
