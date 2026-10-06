@@ -10,7 +10,7 @@ import { CardiNative } from '../../modules/cardi-native';
  * Paste the App Key from aptabase.com (Instructions, in the left menu) below.
  * While it's empty nothing is sent.
  */
-const APTABASE_KEY = '';
+const APTABASE_KEY = 'A-EU-4751170108';
 
 let started = false;
 
