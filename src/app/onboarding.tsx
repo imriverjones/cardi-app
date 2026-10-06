@@ -8,10 +8,11 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { Outfit, Waves } from '@/components/art';
 import { BIAS_OPTIONS, COVER_OPTIONS, Option, SkinPicker, TimeStepper } from '@/components/settings-parts';
 import { BigButton, Box, Row, Seg, T, tap, Wordmark } from '@/components/ui';
+import { askToNotify } from '@/notify/morning';
 import { useApp } from '@/state/app-state';
 import { FONT } from '@/theme/skins';
 
-type StepId = 'welcome' | 'name' | 'cover' | 'wear' | 'hair' | 'day' | 'feel' | 'location' | 'look';
+type StepId = 'welcome' | 'name' | 'cover' | 'wear' | 'hair' | 'day' | 'feel' | 'location' | 'morning' | 'look';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -88,8 +89,9 @@ export default function Onboarding() {
   const { width } = useWindowDimensions();
   const [i, setI] = useState(0);
   const [locState, setLocState] = useState<'idle' | 'granted' | 'denied'>('idle');
+  const [notifyDenied, setNotifyDenied] = useState(false);
 
-  const steps: StepId[] = ['welcome', 'name', 'cover', ...(s.cover.outfit ? (['wear'] as StepId[]) : []), ...(s.cover.hair ? (['hair'] as StepId[]) : []), 'day', 'feel', 'location', 'look'];
+  const steps: StepId[] = ['welcome', 'name', 'cover', ...(s.cover.outfit ? (['wear'] as StepId[]) : []), ...(s.cover.hair ? (['hair'] as StepId[]) : []), 'day', 'feel', 'location', 'morning', 'look'];
   const idx = Math.min(i, steps.length - 1);
   const step = steps[idx];
   const last = idx === steps.length - 1;
@@ -102,6 +104,13 @@ export default function Onboarding() {
     router.replace('/');
     // Best moment to ask: they've just seen what Cardi does.
     setTimeout(() => router.push('/widgets'), 1400);
+  };
+
+  const askNotify = async () => {
+    tap();
+    const ok = await askToNotify();
+    setNotifyDenied(!ok);
+    update({ notify: ok, notifyAt: s.notify ? s.notifyAt : Math.max(5, Math.round((s.leave - 0.75) * 4) / 4) });
   };
 
   const askLocation = async () => {
@@ -197,8 +206,8 @@ export default function Onboarding() {
           <>
             <Q>What do you usually wear?</Q>
             <Why>So outfit tips use the right words for you.</Why>
-            <Option title="Trousers & jeans" sub="Jumpers, overshirts, coats" on={s.wear === 'trousers'} onPress={() => update({ wear: 'trousers' })} />
-            <Option title="Dresses & skirts" sub="Knits, tights, bare legs" on={s.wear === 'dresses'} onPress={() => update({ wear: 'dresses' })} />
+            <Option title="Trousers & jeans" sub="Jumpers, overshirts, coats" on={s.wear === 'trousers'} onPress={() => update({ wear: 'trousers', skin: 'stone' })} />
+            <Option title="Dresses & skirts" sub="Knits, tights, bare legs" on={s.wear === 'dresses'} onPress={() => update({ wear: 'dresses', skin: 'blush' })} />
             <Option title="A mix of everything" on={s.wear === 'mix'} onPress={() => update({ wear: 'mix' })} />
           </>
         )}
@@ -260,6 +269,24 @@ export default function Onboarding() {
               onPress={askLocation}
             />
             <Option title={s.place ? `City: ${s.place.name}` : 'Pick a city instead'} sub="Good if you'd rather not share location" on={!!s.place} onPress={() => router.push('/place')} />
+          </>
+        )}
+
+        {step === 'morning' && (
+          <>
+            <Q>Want a heads-up each morning?</Q>
+            <Why>One line at a time you pick, like “Feels 9° · Jacket day. Brolly for the way home.”</Why>
+            <Option title="Yes please" sub="You can change the time any time in Me" on={s.notify} onPress={askNotify} />
+            {s.notify && (
+              <Box>
+                <Row last>
+                  <T w="semibold">Send it at</T>
+                  <TimeStepper label="notification time" value={s.notifyAt} onChange={(notifyAt) => update({ notifyAt })} />
+                </Row>
+              </Box>
+            )}
+            {notifyDenied && <Why>Notifications are off for Cardi. You can turn them on in Settings › Cardi › Notifications.</Why>}
+            <Option title="No thanks" sub="The widget will still keep you posted" on={!s.notify} onPress={() => update({ notify: false })} />
           </>
         )}
 

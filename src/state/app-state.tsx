@@ -6,6 +6,7 @@ import { advise, type Advice } from '@/engine/advice';
 import { DEFAULT_SETTINGS, type Forecast, type Settings } from '@/engine/types';
 import { SKINS, type Palette } from '@/theme/skins';
 import { cachedForecast, currentPlace, fetchForecast, isFresh } from '@/weather/forecast';
+import { scheduleMornings } from '@/notify/morning';
 import { syncCheckInSkin, syncWidgets, takeCheckInAnswer } from '@/widgets/sync';
 
 const SETTINGS_KEY = 'cardi.settings';
@@ -138,6 +139,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Keep the widgets in step with the app.
   useEffect(() => {
     if (forecast && settings.onboarded) syncWidgets(forecast, settings);
+  }, [forecast, settings]);
+  // Morning notifications are rebuilt from the latest forecast, so they always say the right thing.
+  useEffect(() => {
+    if (forecast && settings.onboarded) scheduleMornings(forecast, settings);
   }, [forecast, settings]);
   useEffect(() => {
     if (ready) syncCheckInSkin(settings);

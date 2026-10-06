@@ -34,7 +34,7 @@ export type CardiWidgetProps = {
   headline: string;
   headline2: string;
   /** What to act on, most important first (max 3). Each is a few words with an SF Symbol. */
-  alerts: { symbol: SFSymbol; tone: Tone; text: string }[];
+  alerts: { symbol: SFSymbol; tone: Tone; text: string; sub?: string }[];
   /** Outfit in a word or two, e.g. "T-shirt" */
   short: string;
   /** Big SF Symbol for the outfit, shown on the large widget */

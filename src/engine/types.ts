@@ -33,6 +33,9 @@ export type Settings = {
   widgetAdded: boolean;
   /** Don't show the "add the widget" card again before this time (ms) */
   widgetSnoozeUntil: number;
+  /** Morning notification on/off, and when (decimal hours) */
+  notify: boolean;
+  notifyAt: number;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -49,6 +52,8 @@ export const DEFAULT_SETTINGS: Settings = {
   place: null,
   widgetAdded: false,
   widgetSnoozeUntil: 0,
+  notify: false,
+  notifyAt: 7.25,
 };
 
 /** One forecast hour. `t` is a unix timestamp in ms. */

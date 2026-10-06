@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BIAS_OPTIONS, COVER_OPTIONS, SkinPicker, TimeStepper } from '@/components/settings-parts';
 import { BigButton, Box, Row, Seg, T, tap } from '@/components/ui';
+import { askToNotify } from '@/notify/morning';
 import { useApp } from '@/state/app-state';
 import { FONT } from '@/theme/skins';
 
@@ -104,6 +105,36 @@ export default function Me() {
       />
       <T size={13} color={p.ink3} style={{ paddingHorizontal: 6 }}>
         Your “bit chilly” and “too warm” taps adjust this for you over time.
+      </T>
+
+      <T w="heavy" size={17} style={{ marginTop: 14 }}>
+        Morning heads-up
+      </T>
+      <Box>
+        <Row last={!s.notify}>
+          <T w="semibold">Notification</T>
+          <Seg
+            value={s.notify ? 'on' : 'off'}
+            options={[
+              ['on', 'On'],
+              ['off', 'Off'],
+            ]}
+            onChange={async (v) => {
+              if (v === 'off') return update({ notify: false });
+              const ok = await askToNotify();
+              update({ notify: ok });
+            }}
+          />
+        </Row>
+        {s.notify && (
+          <Row last>
+            <T w="semibold">Send it at</T>
+            <TimeStepper label="notification time" value={s.notifyAt} onChange={(notifyAt) => update({ notifyAt })} />
+          </Row>
+        )}
+      </Box>
+      <T size={13} color={p.ink3} style={{ paddingHorizontal: 6 }}>
+        One line each morning: your feels like, the outfit, and anything to bring. If it won’t turn on, allow notifications in Settings › Cardi.
       </T>
 
       <T w="heavy" size={17} style={{ marginTop: 14 }}>

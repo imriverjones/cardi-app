@@ -3,11 +3,12 @@ import * as TaskManager from 'expo-task-manager';
 
 import { loadSettings } from '@/state/app-state';
 import { cachedForecast, fetchForecast, isFresh, lastPlace } from '@/weather/forecast';
+import { scheduleMornings } from '@/notify/morning';
 import { syncWidgets } from '@/widgets/sync';
 
 /*
  * Every so often (iOS decides when, usually a few times a day) refresh the
- * forecast and the widget, so it stays right even if the app isn't opened.
+ * forecast, the widget and the morning notifications, so they stay right even if the app isn't opened.
  */
 export const REFRESH_TASK = 'cardi-refresh-forecast';
 
@@ -20,6 +21,7 @@ TaskManager.defineTask(REFRESH_TASK, async () => {
     const cached = await cachedForecast();
     const f = isFresh(cached, place) && cached ? cached : await fetchForecast(place);
     await syncWidgets(f, s);
+    await scheduleMornings(f, s);
     return BackgroundTask.BackgroundTaskResult.Success;
   } catch {
     return BackgroundTask.BackgroundTaskResult.Failed;

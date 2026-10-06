@@ -25,17 +25,29 @@ export function alerts(a: Advice, s: Settings, mode: CardiWidgetProps['mode']): 
   const out: Alert[] = [];
   const rainAt = fmtHour(a.rainStart ?? s.back);
   if (mode === 'home') {
-    out.push(a.rHome >= 40 ? { symbol: 'umbrella.fill', tone: 'rain', text: `Brolly · rain ${rainAt}` } : { symbol: 'checkmark.circle.fill', tone: 'green', text: 'Dry way home' });
+    out.push(
+      a.rHome >= 40
+        ? { symbol: 'umbrella.fill', tone: 'rain', text: `Brolly · rain ${rainAt}`, sub: `${a.rHome}% chance on the way home` }
+        : { symbol: 'checkmark.circle.fill', tone: 'green', text: 'Dry way home', sub: 'No brolly needed' }
+    );
   } else {
-    if (a.brolly) out.push({ symbol: 'umbrella.fill', tone: 'rain', text: `Brolly · rain ${rainAt}` });
-    if (a.warmUp) out.push({ symbol: 'arrow.up.right', tone: 'layer', text: `Layers · ${a.lunch}° by lunch` });
-    if (s.cover.skin && a.uv >= 3) out.push({ symbol: 'sun.max.fill', tone: 'sun', text: `SPF · UV ${a.uv} at ${fmtHour(a.uvPeak)}` });
-    if (s.cover.hair && s.hair !== 'short' && a.frizz >= 4) out.push({ symbol: 'humidity.fill', tone: 'hair', text: cap(a.hair.short) });
+    if (a.brolly)
+      out.push({
+        symbol: 'umbrella.fill',
+        tone: 'rain',
+        text: `Brolly · rain ${rainAt}`,
+        sub: a.rOut >= 40 ? 'Wet on the way in' : 'Dry on the way in, wet on the way home',
+      });
+    if (a.warmUp) out.push({ symbol: 'arrow.up.right', tone: 'layer', text: `Layers · ${a.lunch}° by lunch`, sub: 'Something you can take off' });
+    if (s.cover.skin && a.uv >= 3)
+      out.push({ symbol: 'sun.max.fill', tone: 'sun', text: `SPF · UV ${a.uv} at ${fmtHour(a.uvPeak)}`, sub: a.uv >= 6 ? 'SPF 30+ and sunglasses' : 'Stronger than it feels on a cool day' });
+    if (s.cover.hair && s.hair !== 'short' && a.frizz >= 4) out.push({ symbol: 'humidity.fill', tone: 'hair', text: cap(a.hair.short), sub: a.hair.tip });
   }
-  if (a.windy) out.push({ symbol: 'wind', tone: 'other', text: `Windy · ${a.maxWind} km/h` });
-  if (s.cover.commute) out.push({ symbol: MOVE_SYMBOL[s.move], tone: 'other', text: a.commute.s });
-  if (s.cover.washing) out.push({ symbol: 'hanger', tone: 'green', text: a.washing.s });
-  if (!out.length) out.push({ symbol: 'checkmark.circle.fill', tone: 'green', text: a.rOut < 40 && a.rHome < 40 ? 'Dry · nothing to carry' : 'Nothing to carry' });
+  if (a.windy) out.push({ symbol: 'wind', tone: 'other', text: `Windy · ${a.maxWind} km/h`, sub: 'Zip up, and hold on to your hat' });
+  if (s.cover.commute) out.push({ symbol: MOVE_SYMBOL[s.move], tone: 'other', text: a.commute.s, sub: a.commute.m });
+  if (s.cover.washing) out.push({ symbol: 'hanger', tone: 'green', text: a.washing.s, sub: a.washing.m });
+  if (!out.length)
+    out.push({ symbol: 'checkmark.circle.fill', tone: 'green', text: a.rOut < 40 && a.rHome < 40 ? 'Dry · nothing to carry' : 'Nothing to carry', sub: 'Just the outfit today' });
   return out.slice(0, 3);
 }
 
