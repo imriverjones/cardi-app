@@ -75,5 +75,7 @@ export type Forecast = {
   lon: number;
   utcOffsetSeconds: number;
   fetchedAt: number;
+  /** Where the numbers came from, for the on-screen credit. Older caches have none. */
+  source?: 'apple' | 'open-meteo';
   hours: Hour[];
 };

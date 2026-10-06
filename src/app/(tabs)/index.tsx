@@ -1,33 +1,19 @@
-import { SymbolView } from 'expo-symbols';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { DayRing } from '@/components/day-ring';
+import { DayPlan } from '@/components/day-plan';
 import { Box, Pill, T, tap, Wordmark } from '@/components/ui';
 import { useNow } from '@/components/use-now';
+import { WeatherCredit } from '@/components/weather-credit';
 import { LockPreview } from '@/components/widget-preview';
 import { localDayKey, localHourOf } from '@/engine/advice';
 import { useApp } from '@/state/app-state';
-import type { Palette } from '@/theme/skins';
-import type { Tone } from '@/widgets/CardiWidget';
-import { alerts } from '@/widgets/sync';
-
-const toneColors = (p: Palette, tone: Tone) =>
-  ({
-    rain: [p.tRain, p.dRain],
-    layer: [p.tLayer, p.dLayer],
-    sun: [p.tSun, p.dSun],
-    hair: [p.tHair, p.dHair],
-    green: [p.tGreen, p.dGreen],
-    other: [p.tOther, p.dOther],
-  })[tone];
 
 export default function Today() {
   const { advice: a, settings: s, palette: p, status, error, refresh, feedback, lastFeedback, forecast, update } = useApp();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
   const [refreshing, setRefreshing] = useState(false);
   const now = useNow();
 
@@ -60,9 +46,12 @@ export default function Today() {
   }
 
   const isToday = a.dayKey === localDayKey(forecast, now);
+  // Right now, as the iPhone Weather app shows it, so the two always agree.
+  const current = forecast.hours.reduce<(typeof forecast.hours)[number] | null>(
+    (best, h) => (h.t <= now && (!best || h.t > best.t) ? h : best),
+    null
+  );
   const nowH = isToday ? localHourOf(forecast, now) : null;
-  const ringSize = Math.min(width - 60, 300);
-  const rows = alerts(a, s, 'morning');
   const hour = nowH ?? 0;
   const greeting = hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening';
   // Asking how the day felt only makes sense once you're on your way home.
@@ -96,6 +85,11 @@ export default function Today() {
               {new Date(now).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })} · {a.place}
             </T>
           </Pressable>
+          {current && (
+            <T w="semibold" size={14} color={p.ink2}>
+              {`Now ${Math.round(current.temp)}°, feels ${Math.round(current.feels)}°`}
+            </T>
+          )}
         </View>
         <Pressable
           onPress={() => router.navigate('/me')}
@@ -107,61 +101,7 @@ export default function Today() {
         </Pressable>
       </View>
 
-      <View style={{ alignItems: 'center', gap: 10 }}>
-        <DayRing
-          size={ringSize}
-          nowHour={nowH}
-          out={[
-            [s.leave, s.leave + 1],
-            [s.back, s.back + 1],
-          ]}
-          rain={a.rainStart != null ? [a.rainStart, a.rainEnd!] : null}>
-          <T w="bold" size={12.5} color={p.ink3}>
-            Feels like for you
-          </T>
-          <T w="black" size={ringSize * 0.22} style={{ letterSpacing: -3, lineHeight: ringSize * 0.24 }}>
-            {`${a.mine}°`}
-          </T>
-          <T w="heavy" size={17} style={{ textAlign: 'center' }}>
-            {a.step.day}
-          </T>
-          <T size={13} color={p.ink2} style={{ textAlign: 'center' }}>
-            {`${a.actual}° actual · on your ${a.when === 'out' ? 'way out' : 'way home'}`}
-          </T>
-        </DayRing>
-        {s.cover.outfit && (
-          <T w="semibold" size={15} color={p.ink2} style={{ textAlign: 'center', paddingHorizontal: 12 }}>
-            {a.wear}
-          </T>
-        )}
-      </View>
-
-      <Box style={{ overflow: 'hidden' }}>
-        {rows.map((r, i) => {
-          const [bg, fg] = toneColors(p, r.tone);
-          return (
-            <View
-              key={r.text}
-              accessible
-              accessibilityLabel={`${r.text}. ${r.sub ?? ''}`}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: i === rows.length - 1 ? 0 : 1, borderBottomColor: p.line }}>
-              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
-                <SymbolView name={r.symbol} size={19} tintColor={fg} />
-              </View>
-              <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
-                <T w="heavy" size={16}>
-                  {r.text}
-                </T>
-                {r.sub ? (
-                  <T size={13} color={p.ink2}>
-                    {r.sub}
-                  </T>
-                ) : null}
-              </View>
-            </View>
-          );
-        })}
-      </Box>
+      <DayPlan a={a} s={s} p={p} nowH={nowH} />
 
       {showWidgetCard && (
         <View>
@@ -226,9 +166,7 @@ export default function Today() {
             {error}
           </T>
         )}
-        <T size={11} color={p.ink3} style={{ textAlign: 'center' }}>
-          Weather data by Open-Meteo.com · updated {new Date(forecast.fetchedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-        </T>
+        <WeatherCredit forecast={forecast} />
       </View>
     </ScrollView>
   );

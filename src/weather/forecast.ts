@@ -3,10 +3,12 @@ import * as Location from 'expo-location';
 
 import type { Forecast, Hour, Place } from '@/engine/types';
 
+import { CardiWeather } from '../../modules/cardi-weather';
+
 /*
- * Weather comes from Open-Meteo (no API key). Their free tier is for
- * non-commercial use, which is fine for testing. Before launch, switch to their
- * paid plan or Apple WeatherKit (see README).
+ * Weather comes from Apple Weather (WeatherKit), so Cardi's numbers match the
+ * iPhone Weather app. If that isn't available (Expo Go, web, or a WeatherKit
+ * error) it falls back to Open-Meteo, whose free tier is fine for testing.
  */
 const API = 'https://api.open-meteo.com/v1/forecast';
 const GEO = 'https://geocoding-api.open-meteo.com/v1/search';
@@ -28,7 +30,40 @@ type OpenMeteo = {
   };
 };
 
+/** WeatherKit conditions mapped to the WMO codes the icons use. */
+function wmo(condition: string): number {
+  const c = condition.toLowerCase();
+  if (c.includes('thunder') || c.includes('storm') || c.includes('hurricane')) return 95;
+  if (c.includes('heavysnow') || c.includes('blizzard')) return 75;
+  if (c.includes('snow') || c.includes('flurries')) return 71;
+  if (c.includes('sleet') || c.includes('freezing') || c.includes('hail') || c.includes('wintry')) return 66;
+  if (c.includes('heavyrain')) return 65;
+  if (c.includes('rain') || c.includes('showers')) return 61;
+  if (c.includes('drizzle')) return 51;
+  if (c.includes('fog') || c.includes('haze') || c.includes('smoky')) return 45;
+  if (c === 'partlycloudy') return 2;
+  if (c.includes('cloud') || c.includes('windy') || c.includes('breezy') || c.includes('blowing')) return 3;
+  return 0;
+}
+
+async function fromApple(place: Place): Promise<Forecast | null> {
+  if (!CardiWeather) return null;
+  try {
+    const r = await CardiWeather.hourlyAsync(place.lat, place.lon);
+    if (!r.hours.length) return null;
+    const hours: Hour[] = r.hours.map((h) => ({ t: h.t, temp: h.temp, feels: h.feels, dew: h.dew, rain: h.rain, uv: h.uv, wind: h.wind, code: wmo(h.condition) }));
+    return { place: place.name, lat: place.lat, lon: place.lon, utcOffsetSeconds: r.utcOffsetSeconds, fetchedAt: Date.now(), hours, source: 'apple' };
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchForecast(place: Place): Promise<Forecast> {
+  const apple = await fromApple(place);
+  if (apple) {
+    await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(apple)).catch(() => {});
+    return apple;
+  }
   const params = new URLSearchParams({
     latitude: String(place.lat),
     longitude: String(place.lon),
@@ -59,6 +94,7 @@ export async function fetchForecast(place: Place): Promise<Forecast> {
     utcOffsetSeconds: j.utc_offset_seconds,
     fetchedAt: Date.now(),
     hours,
+    source: 'open-meteo',
   };
   await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(f)).catch(() => {});
   return f;

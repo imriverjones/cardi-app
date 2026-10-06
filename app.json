@@ -18,6 +18,9 @@
           "fetch",
           "processing"
         ]
+      },
+      "entitlements": {
+        "com.apple.developer.weatherkit": true
       }
     },
     "android": {

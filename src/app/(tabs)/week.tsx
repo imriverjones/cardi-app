@@ -1,11 +1,14 @@
-import { ScrollView, View } from 'react-native';
+import { router } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
+import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { WeatherIcon } from '@/components/art';
-import { Box, T } from '@/components/ui';
-import { localDayKey, week } from '@/engine/advice';
+import { toneColors } from '@/components/day-plan';
+import { Box, T, tap } from '@/components/ui';
 import { useNow } from '@/components/use-now';
+import { localDayKey, week } from '@/engine/advice';
 import { useApp } from '@/state/app-state';
+import { alerts } from '@/widgets/sync';
 
 export default function Week() {
   const { forecast, settings: s, palette: p } = useApp();
@@ -20,44 +23,62 @@ export default function Week() {
         Your week
       </T>
       <T color={p.ink3} style={{ marginTop: 4, marginBottom: 16 }}>
-        What to wear each day{forecast ? ` in ${forecast.place}` : ''}, for the hours you’re out.
+        What to wear each day{forecast ? ` in ${forecast.place}` : ''}. Tap a day for the full plan.
       </T>
       <Box style={{ overflow: 'hidden' }}>
         {days.map((d, i) => {
           const date = new Date(d.dayKey * 86_400_000 + 12 * 3_600_000);
-          const mid = d.hours[13];
-          const extras = [`feels ${d.mine}° for you`, d.brolly ? 'rain' : null, s.cover.skin && d.uv >= 5 ? `UV ${d.uv}` : null, s.cover.hair && d.frizz >= 7 && d.curly ? 'frizz' : null]
-            .filter(Boolean)
-            .join(' · ');
+          const top = alerts(d, s, 'morning')[0];
+          const [bg, fg] = toneColors(p, top.tone);
+          const name = d.dayKey === today ? 'Today' : d.dayKey === today + 1 ? 'Tomorrow' : date.toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' });
           return (
-            <View
+            <Pressable
               key={d.dayKey}
-              style={{
+              accessibilityRole="button"
+              accessibilityLabel={`${name}: feels ${d.mine} degrees, ${d.step.day}. ${top.text}`}
+              onPress={() => {
+                tap();
+                router.push({ pathname: '/day', params: { k: String(d.dayKey) } });
+              }}
+              style={({ pressed }) => ({
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 10,
+                gap: 12,
                 paddingHorizontal: 16,
                 paddingVertical: 13,
+                backgroundColor: pressed ? p.field : 'transparent',
                 borderBottomWidth: i === days.length - 1 ? 0 : 1,
                 borderBottomColor: p.line,
-              }}>
-              <T w="bold" style={{ width: 52 }}>
-                {d.dayKey === today ? 'Today' : date.toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' })}
-              </T>
-              <WeatherIcon code={mid.code} rain={Math.max(d.rOut, d.rHome)} />
-              <View style={{ flex: 1 }}>
-                <T w="bold">{d.step.day}</T>
-                <T size={13} color={p.ink3} numberOfLines={1}>
-                  {extras}
-                </T>
+              })}>
+              <View style={{ width: 44, alignItems: 'flex-start' }}>
+                <T w="black" size={22} style={{ letterSpacing: -0.5 }}>{`${d.mine}°`}</T>
               </View>
-              <T w="semibold" size={14} color={p.ink2} style={{ fontVariant: ['tabular-nums'] }}>
-                {`${d.hi}° / ${d.lo}°`}
+              <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                <T w="bold" size={13} color={p.ink3}>
+                  {name}
+                </T>
+                <T w="heavy" size={16}>
+                  {d.step.day}
+                </T>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
+                    <SymbolView name={top.symbol} size={11} tintColor={fg} />
+                  </View>
+                  <T size={13} color={p.ink2} numberOfLines={1} style={{ flex: 1 }}>
+                    {top.text}
+                  </T>
+                </View>
+              </View>
+              <T w="bold" size={18} color={p.ink3}>
+                ›
               </T>
-            </View>
+            </Pressable>
           );
         })}
       </Box>
+      <T size={12} color={p.ink3} style={{ marginTop: 10, paddingHorizontal: 6 }}>
+        The number is your feels like for the hours you’re out.
+      </T>
     </ScrollView>
   );
 }

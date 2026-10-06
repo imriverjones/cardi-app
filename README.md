@@ -87,7 +87,7 @@ Once step 3 has worked, every push to `main` can build and send to TestFlight on
 |---|---|
 | Screens (Today, Week, Me, setup, stories, place search) | `src/app/` |
 | Advice engine: personal feels like, outfit, hair, rain, UV, commute, school run, drying day | `src/engine/advice.ts` |
-| Weather (Open-Meteo hourly forecast) and location | `src/weather/forecast.ts` |
+| Weather (Apple Weather, Open-Meteo fallback) and location | `src/weather/forecast.ts`, `modules/cardi-weather` |
 | Settings and app state | `src/state/app-state.tsx` |
 | Home and Lock Screen widget | `src/widgets/CardiWidget.tsx` |
 | Interactive check-in widget | `src/widgets/CheckInWidget.tsx` |
@@ -103,7 +103,7 @@ Once step 3 has worked, every push to `main` can build and send to TestFlight on
 
 ## Before launch
 
-- **Weather licence.** Open-Meteo's free API is for non-commercial use. Before charging or launching publicly, switch to their paid plan, or to Apple WeatherKit (free up to 500,000 calls a month with your developer account).
+- **Weather.** Cardi uses Apple Weather (WeatherKit, free up to 500,000 calls a month with your developer account), through the small native module in `modules/cardi-weather`. If it isn't available it falls back to Open-Meteo, whose free tier is non-commercial. WeatherKit must be ticked for the app ID under both Capabilities and App Services at developer.apple.com.
 - **App Store listing.** You'll need screenshots (the canvas designs work), a privacy policy URL (location is only used for weather, nothing is collected), and a support URL.
 - **Android.** The app runs on Android, but the widgets are iPhone-only for now.
 
