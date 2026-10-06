@@ -77,15 +77,20 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
     return <Text modifiers={[link]}>{props.inline}</Text>;
   }
   if (fam === 'accessoryCircular') {
+    // Gauge label slots don't render inside widgets, so the number sits on top of a bare ring.
     return (
-      <Gauge
-        value={Math.min(props.hi, Math.max(props.lo, props.feels))}
-        min={props.lo}
-        max={props.hi === props.lo ? props.lo + 1 : props.hi}
-        currentValueLabel={<Text modifiers={[font({ size: 20, weight: 'bold', design: 'rounded' })]}>{`${props.feels}°`}</Text>}
-        modifiers={[gaugeStyle('circular'), link]}>
-        <Text>you</Text>
-      </Gauge>
+      <ZStack modifiers={[link]}>
+        <Gauge
+          value={Math.min(props.hi, Math.max(props.lo, props.feels))}
+          min={props.lo}
+          max={props.hi === props.lo ? props.lo + 1 : props.hi}
+          modifiers={[gaugeStyle('circular')]}
+        />
+        <VStack spacing={-1}>
+          <Text modifiers={[font({ size: 20, weight: 'bold', design: 'rounded' }), minimumScaleFactor(0.6), lineLimit(1)]}>{`${props.feels}°`}</Text>
+          <Text modifiers={[font({ size: 10, weight: 'semibold' })]}>you</Text>
+        </VStack>
+      </ZStack>
     );
   }
   if (fam === 'accessoryRectangular') {
