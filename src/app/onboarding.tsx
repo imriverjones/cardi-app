@@ -206,8 +206,8 @@ export default function Onboarding() {
           <>
             <Q>What do you usually wear?</Q>
             <Why>So outfit tips use the right words for you.</Why>
-            <Option title="Trousers & jeans" sub="Jumpers, overshirts, coats" on={s.wear === 'trousers'} onPress={() => update({ wear: 'trousers', skin: 'stone' })} />
-            <Option title="Dresses & skirts" sub="Knits, tights, bare legs" on={s.wear === 'dresses'} onPress={() => update({ wear: 'dresses', skin: 'blush' })} />
+            <Option title="Trousers & jeans" sub="Jumpers, overshirts, coats" on={s.wear === 'trousers'} onPress={() => update({ wear: 'trousers' })} />
+            <Option title="Dresses & skirts" sub="Knits, tights, bare legs" on={s.wear === 'dresses'} onPress={() => update({ wear: 'dresses' })} />
             <Option title="A mix of everything" on={s.wear === 'mix'} onPress={() => update({ wear: 'mix' })} />
           </>
         )}
