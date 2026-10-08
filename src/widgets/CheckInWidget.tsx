@@ -16,9 +16,9 @@ const CheckInWidget = (props: CheckInProps, _env: WidgetEnvironment) => {
     blush: { bg: '#FFF7F6', ink: '#221B1C', ink3: '#8E8285', accent: '#F0647A' },
     stone: { bg: '#F7F5F1', ink: '#1E211F', ink3: '#7E837D', accent: '#3E7C63' },
     night: { bg: '#1F1E23', ink: '#F5F1EF', ink3: '#948E8C', accent: '#FF8DA0' },
-  }[props.skin];
+  }[props && props.skin ? props.skin : 'blush'];
 
-  if (props.answer) {
+  if (props && props.answer) {
     const msg = props.answer === 'cold' ? "Noted. I'll dress you warmer." : props.answer === 'warm' ? "Noted. I'll go lighter." : 'Lovely. Same again.';
     return (
       <VStack alignment="leading" spacing={6} modifiers={[frame({ maxWidth: Infinity, maxHeight: Infinity, alignment: 'leading' }), containerBackground(P.bg, 'widget')]}>

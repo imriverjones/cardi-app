@@ -56,6 +56,33 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
   'widget';
   'use no memo';
   // Everything the layout needs must live inside this function (it runs in the widget's own runtime).
+
+  // Added before setup is finished: no forecast yet, so point people to the app instead of showing a blank widget.
+  if (!props || !props.alerts) {
+    const f = env.widgetFamily;
+    const open = widgetURL('cardi://?from=widget&size=setup');
+    if (f === 'accessoryInline') return <Text modifiers={[open]}>Open Cardi to set up</Text>;
+    if (f === 'accessoryCircular')
+      return (
+        <VStack spacing={2} modifiers={[open]}>
+          <Image systemName="tshirt.fill" size={16} />
+          <Text modifiers={[font({ size: 11, weight: 'semibold' })]}>Cardi</Text>
+        </VStack>
+      );
+    if (f === 'accessoryRectangular')
+      return (
+        <VStack alignment="leading" spacing={1} modifiers={[frame({ maxWidth: Infinity, alignment: 'leading' }), open]}>
+          <Text modifiers={[font({ size: 16, weight: 'heavy', design: 'rounded' })]}>Cardi</Text>
+          <Text modifiers={[font({ size: 13, weight: 'semibold' }), lineLimit(2)]}>Open the app to set up your forecast</Text>
+        </VStack>
+      );
+    return (
+      <VStack alignment="leading" spacing={6} modifiers={[frame({ maxWidth: Infinity, maxHeight: Infinity, alignment: 'leading' }), containerBackground('#FFF7F6', 'widget'), open]}>
+        <Text modifiers={[font({ size: 22, weight: 'black', design: 'rounded' }), foregroundStyle('#221B1C')]}>cardi</Text>
+        <Text modifiers={[font({ size: 14, weight: 'semibold' }), foregroundStyle('#5F5356')]}>Open Cardi to finish setup, then your outfit shows here.</Text>
+      </VStack>
+    );
+  }
   const P = {
     blush: { bg: '#FFF7F6', bg2: '#FFE6E1', ink: '#221B1C', ink2: '#5F5356', ink3: '#8E8285', accent: '#F0647A', accentText: '#B3374E', chip: '#FFFFFF' },
     stone: { bg: '#F7F5F1', bg2: '#EFE4D4', ink: '#1E211F', ink2: '#535953', ink3: '#7E837D', accent: '#3E7C63', accentText: '#2C5E4A', chip: '#FFFFFF' },
