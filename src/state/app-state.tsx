@@ -2,7 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 
-import { advise, type Advice } from '@/engine/advice';
+import { advise, localDayKey, localHourOf, type Advice } from '@/engine/advice';
+import { useNow } from '@/components/use-now';
 import { DEFAULT_SETTINGS, type Forecast, type Settings } from '@/engine/types';
 import { SKINS, type Palette } from '@/theme/skins';
 import { cachedForecast, currentPlace, fetchForecast, isFresh } from '@/weather/forecast';
@@ -138,7 +139,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => sub.remove();
   }, [refresh, feedback]);
 
-  const advice = forecast ? advise(forecast, settings) : null;
+  // Recomputed every minute, so the advice moves on once you've left the house.
+  const now = useNow();
+  const advice = forecast ? advise(forecast, settings, localDayKey(forecast, now), localHourOf(forecast, now)) : null;
 
   // Keep the widgets in step with the app.
   useEffect(() => {

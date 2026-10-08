@@ -1,6 +1,6 @@
 import type { SFSymbol } from 'sf-symbols-typescript';
 
-import { advise, fmtClock, fmtHour, localDayKey, timeAt, type Advice } from '@/engine/advice';
+import { advise, fmtClock, fmtHour, localDayKey, localHourOf, timeAt, type Advice } from '@/engine/advice';
 import type { Forecast, Settings } from '@/engine/types';
 
 import type { CardiWidgetProps } from './CardiWidget';
@@ -136,13 +136,17 @@ function entry(a: Advice, s: Settings, mode: CardiWidgetProps['mode']): CardiWid
  */
 export function buildTimeline(f: Forecast, s: Settings, now = Date.now()) {
   const today = localDayKey(f, now);
-  const a0 = advise(f, s, today);
+  const a0 = advise(f, s, today, localHourOf(f, now));
   const a1 = advise(f, s, today + 1);
   const out: { date: Date; props: CardiWidgetProps }[] = [];
   const homeFrom = timeAt(f, today, Math.max(s.leave + 1, s.back - 2));
   const tomorrowFrom = timeAt(f, today, Math.min(23.5, s.back + 1.5));
+  // Once the trip out is over, the rest of the day: no more "5°" from 8am at 2pm.
+  const afterOut = timeAt(f, today, s.leave + 1);
+  const a0Later = advise(f, s, today, s.leave + 1);
 
   if (a0 && now < homeFrom) out.push({ date: new Date(now), props: entry(a0, s, 'morning') });
+  if (a0Later && now < afterOut && afterOut < homeFrom) out.push({ date: new Date(afterOut), props: entry(a0Later, s, 'morning') });
   if (a0 && now < tomorrowFrom) out.push({ date: new Date(Math.max(now, homeFrom)), props: entry(a0, s, 'home') });
   if (a1) out.push({ date: new Date(Math.max(now, tomorrowFrom)), props: entry(a1, s, 'tomorrow') });
   // Tomorrow's morning view and trip home, so the widget keeps going if the app isn't opened.

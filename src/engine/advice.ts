@@ -175,13 +175,19 @@ export type Advice = {
   leaveFeels: number;
 };
 
-export function advise(f: Forecast, s: Settings, dayKey = localDayKey(f, Date.now())): Advice | null {
+/**
+ * `fromHour` is the local hour "now" when this is today's advice. Once the trip out is over,
+ * the advice only looks at what's still ahead, so at 2pm it isn't still saying how cold 8am was.
+ */
+export function advise(f: Forecast, s: Settings, dayKey = localDayKey(f, Date.now()), fromHour = 0): Advice | null {
   const d = hoursForDay(f, dayKey);
   if (d.length < 24) return null;
 
+  const outDone = fromHour >= s.leave + 1;
+  const ahead = (h: number) => !outDone || h >= Math.floor(fromHour);
   const legOut = range(s.leave, s.leave + 1);
   const legHome = range(s.back, s.back + 1);
-  const out = [...new Set([...legOut, ...legHome])];
+  const out = outDone ? legHome : [...new Set([...legOut, ...legHome])];
 
   const standard = Math.round(Math.min(...out.map((h) => d[h].feels)));
   const mine = personal(standard, s);
@@ -195,7 +201,8 @@ export function advise(f: Forecast, s: Settings, dayKey = localDayKey(f, Date.no
   const wear = WEAR[step.key][s.wear] ?? WEAR[step.key].mix;
   const lunch = personal(d[13].feels, s);
   // Warmest point of the hours you're away, so we can say "warms to 17° by 2pm".
-  const awayHours = range(s.leave, s.back);
+  const awayAll = range(s.leave, s.back).filter(ahead);
+  const awayHours = awayAll.length ? awayAll : legHome;
   const peakHour = awayHours.reduce((x, y) => (d[y].feels > d[x].feels ? y : x), awayHours[0] ?? 13);
   const peak = personal(d[peakHour].feels, s);
   const warmUp = peak - mine >= 5;
@@ -205,13 +212,14 @@ export function advise(f: Forecast, s: Settings, dayKey = localDayKey(f, Date.no
   const rainHrs = d.map((h, i) => (i >= 7 && i <= 22 && h.rain >= 40 ? i : -1)).filter((i) => i >= 0);
   const rainStart = rainHrs.length ? rainHrs[0] : null;
   const rainEnd = rainHrs.length ? rainHrs[rainHrs.length - 1] : null;
-  const rOut = Math.round(Math.max(...legOut.map((h) => d[h].rain)));
+  // Rain on a trip that's already happened doesn't need a brolly any more.
+  const rOut = outDone ? 0 : Math.round(Math.max(...legOut.map((h) => d[h].rain)));
   const rHome = Math.round(Math.max(...legHome.map((h) => d[h].rain)));
   const brolly = Math.max(rOut, rHome) >= 40;
-  const midHrs = range(s.leave + 1, s.back - 0.5).filter((h) => d[h].rain >= 50);
+  const midHrs = range(s.leave + 1, s.back - 0.5).filter((h) => ahead(h) && d[h].rain >= 50);
   const midRain: [number, number] | null = !brolly && midHrs.length ? [midHrs[0], midHrs[midHrs.length - 1] + 1] : null;
 
-  const uvVals = d.map((h) => h.uv);
+  const uvVals = d.map((h, i) => (ahead(i) ? h.uv : 0));
   const uvMax = Math.max(...uvVals);
   const uv = Math.round(uvMax);
   const uvPeak = uvVals.indexOf(uvMax);
