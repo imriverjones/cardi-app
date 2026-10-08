@@ -37,7 +37,7 @@ function Root() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="onboarding" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
         <Stack.Screen name="place" options={{ presentation: 'formSheet', sheetAllowedDetents: [0.9], sheetGrabberVisible: true }} />
-        <Stack.Screen name="widgets" options={{ presentation: 'formSheet', sheetAllowedDetents: [0.92], sheetGrabberVisible: true }} />
+        <Stack.Screen name="widgets" options={{ presentation: 'modal' }} />
         <Stack.Screen name="day" />
       </Stack>
     </>

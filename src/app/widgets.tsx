@@ -47,7 +47,7 @@ export default function WidgetsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: p.bg2 }}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 28, gap: 16 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingTop: 28, gap: 16 }}>
         <View style={{ gap: 6 }}>
           <T w="heavy" size={26} style={{ letterSpacing: -0.6, lineHeight: 30 }}>
             Know what to wear without opening the app
