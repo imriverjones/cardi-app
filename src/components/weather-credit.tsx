@@ -16,6 +16,7 @@ let cached: AppleAttribution | null = null;
 export function WeatherCredit({ forecast }: { forecast: Forecast }) {
   const { palette: p } = useApp();
   const [attr, setAttr] = useState<AppleAttribution | null>(cached);
+  const [markFailed, setMarkFailed] = useState(false);
   const apple = forecast.source === 'apple';
 
   useEffect(() => {
@@ -39,8 +40,9 @@ export function WeatherCredit({ forecast }: { forecast: Forecast }) {
   }
   return (
     <View style={{ alignItems: 'center', gap: 4 }}>
-      {attr ? (
+      {attr && !markFailed ? (
         <Image
+          onError={() => setMarkFailed(true)}
           source={{ uri: p.dark ? attr.markDarkURL : attr.markLightURL }}
           style={{ width: 88, height: 14 }}
           contentFit="contain"
