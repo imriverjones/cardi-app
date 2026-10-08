@@ -16,7 +16,7 @@ export default function Me() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: p.bg2 }}
-      contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 48, paddingHorizontal: 20, gap: 10 }}
+      contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 110, paddingHorizontal: 20, gap: 10 }}
       keyboardShouldPersistTaps="handled">
       <T w="heavy" size={27} style={{ letterSpacing: -0.5, marginBottom: 6 }}>
         About you

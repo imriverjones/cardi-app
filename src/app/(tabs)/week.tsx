@@ -19,7 +19,7 @@ export default function Week() {
   const today = forecast ? localDayKey(forecast, now) : 0;
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: p.bg2 }} contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 40, paddingHorizontal: 20 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: p.bg2 }} contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 110, paddingHorizontal: 20 }}>
       <T w="heavy" size={27} style={{ letterSpacing: -0.5 }}>
         Your week
       </T>

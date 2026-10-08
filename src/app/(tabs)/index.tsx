@@ -71,7 +71,7 @@ export default function Today() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: p.bg2 }}
-      contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 40, paddingHorizontal: 20, gap: 18 }}
+      contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: insets.bottom + 110, paddingHorizontal: 20, gap: 18 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={p.accent} />}>
       <View style={{ position: 'absolute', top: -400, left: -20, right: -20, height: 760, backgroundColor: p.bg1 }} />
 

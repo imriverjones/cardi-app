@@ -9,6 +9,11 @@ import { useApp } from '@/state/app-state';
  * you're outside are highlighted, rain is dotted around the outside and the
  * current time is a small marker. Labels outside the ring say which is which.
  */
+// The ring is drawn in a 352-unit square; SIDE extra units each side give room for labels at 3 and 9 o'clock.
+const SVG_H = 352;
+const SIDE = 34;
+const SVG_W = SVG_H + SIDE * 2;
+
 export function DayRing({
   size,
   out,
@@ -52,7 +57,11 @@ export function DayRing({
 
   return (
     <View style={{ width: size, height: size }}>
-      <Svg width={size} height={size} viewBox="-26 -26 352 352">
+      <Svg
+        width={(size * SVG_W) / SVG_H}
+        height={size}
+        viewBox={`${-26 - SIDE} -26 ${SVG_W} ${SVG_H}`}
+        style={{ position: 'absolute', left: (-size * SIDE) / SVG_H, top: 0 }}>
         <Circle cx={150} cy={150} r={r} fill={palette.paper} />
         <Circle cx={150} cy={150} r={r} fill="none" stroke={palette.ring} strokeWidth={18} />
         <Circle cx={150} cy={150} r={r} fill="none" stroke={palette.day} strokeWidth={18} {...arc(7, 19)} rotation={-90} origin="150,150" />
