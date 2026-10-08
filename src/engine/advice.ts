@@ -166,6 +166,11 @@ export type Advice = {
   bag: string[];
   /** Personal feels like at the trip home */
   homeFeels: number;
+  /** Warmest you'll feel while you're away, and when */
+  peak: number;
+  peakHour: number;
+  /** Showers between your trips (not on them), as [start, end] hours */
+  midRain: [number, number] | null;
   /** Personal feels like when you leave */
   leaveFeels: number;
 };
@@ -189,7 +194,11 @@ export function advise(f: Forecast, s: Settings, dayKey = localDayKey(f, Date.no
   const step = stepFor(mine, windy);
   const wear = WEAR[step.key][s.wear] ?? WEAR[step.key].mix;
   const lunch = personal(d[13].feels, s);
-  const warmUp = lunch - mine >= 5;
+  // Warmest point of the hours you're away, so we can say "warms to 17° by 2pm".
+  const awayHours = range(s.leave, s.back);
+  const peakHour = awayHours.reduce((x, y) => (d[y].feels > d[x].feels ? y : x), awayHours[0] ?? 13);
+  const peak = personal(d[peakHour].feels, s);
+  const warmUp = peak - mine >= 5;
   const leaveFeels = personal(Math.min(...legOut.map((h) => d[h].feels)), s);
   const homeFeels = personal(Math.min(...legHome.map((h) => d[h].feels)), s);
 
@@ -199,6 +208,8 @@ export function advise(f: Forecast, s: Settings, dayKey = localDayKey(f, Date.no
   const rOut = Math.round(Math.max(...legOut.map((h) => d[h].rain)));
   const rHome = Math.round(Math.max(...legHome.map((h) => d[h].rain)));
   const brolly = Math.max(rOut, rHome) >= 40;
+  const midHrs = range(s.leave + 1, s.back - 0.5).filter((h) => d[h].rain >= 50);
+  const midRain: [number, number] | null = !brolly && midHrs.length ? [midHrs[0], midHrs[midHrs.length - 1] + 1] : null;
 
   const uvVals = d.map((h) => h.uv);
   const uvMax = Math.max(...uvVals);
@@ -325,6 +336,9 @@ export function advise(f: Forecast, s: Settings, dayKey = localDayKey(f, Date.no
     bag,
     homeFeels,
     leaveFeels,
+    peak,
+    peakHour,
+    midRain,
   };
 }
 

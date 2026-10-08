@@ -27,18 +27,30 @@ export function alerts(a: Advice, s: Settings, mode: CardiWidgetProps['mode']): 
   if (mode === 'home') {
     out.push(
       a.rHome >= 40
-        ? { symbol: 'umbrella.fill', tone: 'rain', text: `Brolly · rain ${rainAt}`, sub: `${a.rHome}% chance on the way home` }
+        ? { symbol: 'umbrella.fill', tone: 'rain', text: 'Brolly for the way home', sub: `${a.rHome}% chance of rain around ${fmtClock(s.back)}` }
         : { symbol: 'checkmark.circle.fill', tone: 'green', text: 'Dry way home', sub: 'No brolly needed' }
     );
+    if (a.leaveFeels - a.homeFeels >= 4)
+      out.push({ symbol: 'arrow.down.right', tone: 'layer', text: `Cools to ${a.homeFeels}° by ${fmtClock(s.back)}`, sub: 'Put the layer back on' });
   } else {
-    if (a.brolly)
+    // Rain, said in terms of your trips: in, home, both, or only while you're out and about.
+    if (a.rOut >= 40 && a.rHome >= 40)
+      out.push({ symbol: 'umbrella.fill', tone: 'rain', text: 'Brolly both ways', sub: `Rain on the way in and home, from ${rainAt}` });
+    else if (a.rHome >= 40)
+      out.push({ symbol: 'umbrella.fill', tone: 'rain', text: 'Brolly for the way home', sub: `Dry on the way in, rain from ${rainAt}` });
+    else if (a.rOut >= 40)
+      out.push({ symbol: 'umbrella.fill', tone: 'rain', text: 'Brolly for the way in', sub: `Rain around ${fmtClock(s.leave)}, dry later` });
+    else if (a.midRain)
       out.push({
-        symbol: 'umbrella.fill',
+        symbol: 'cloud.rain.fill',
         tone: 'rain',
-        text: `Brolly · rain ${rainAt}`,
-        sub: a.rOut >= 40 ? 'Wet on the way in' : 'Dry on the way in, wet on the way home',
+        text: `Showers ${fmtHour(a.midRain[0])}–${fmtHour(a.midRain[1])}`,
+        sub: 'Dry on your trips. A brolly in your bag for lunch',
       });
-    if (a.warmUp) out.push({ symbol: 'arrow.up.right', tone: 'layer', text: `Layers · ${a.lunch}° by lunch`, sub: 'Something you can take off' });
+    // How the day changes, so a cold morning doesn't leave you too warm by 2pm (and the reverse).
+    if (a.warmUp) out.push({ symbol: 'arrow.up.right', tone: 'layer', text: `Warms to ${a.peak}° by ${fmtHour(a.peakHour)}`, sub: 'Wear layers you can take off' });
+    else if (a.leaveFeels - a.homeFeels >= 4)
+      out.push({ symbol: 'arrow.down.right', tone: 'layer', text: `Cools to ${a.homeFeels}° by ${fmtClock(s.back)}`, sub: 'Bring a layer for the way home' });
     if (s.cover.skin && a.uv >= 3)
       out.push({ symbol: 'sun.max.fill', tone: 'sun', text: `SPF · UV ${a.uv} at ${fmtHour(a.uvPeak)}`, sub: a.uv >= 6 ? 'SPF 30+ and sunglasses' : 'Stronger than it feels on a cool day' });
     if (s.cover.hair && s.hair !== 'short' && a.frizz >= 4) out.push({ symbol: 'humidity.fill', tone: 'hair', text: cap(a.hair.short), sub: a.hair.tip });
@@ -85,15 +97,20 @@ function entry(a: Advice, s: Settings, mode: CardiWidgetProps['mode']): CardiWid
               ? 'SPF on.'
               : 'Dry all day.';
   const al = alerts(a, s, mode);
-  // Above the clock: "Feels 7° · Jacket · Rain 5:30"
+  // Above the clock: "Feels 9–17° · Jacket · Brolly home"
+  const swing = mode !== 'home' && a.peak - feels >= 4;
+  const range = swing ? `${feels}–${a.peak}°` : `${feels}°`;
   const rain = mode === 'home' ? a.rHome >= 40 : a.brolly;
-  const inline = `Feels ${feels}° · ${a.step.short}` + (rain ? ` · Rain ${fmtHour(a.rainStart ?? s.back)}` : '');
-  const inlineSymbol: SFSymbol = rain ? 'umbrella.fill' : OUTFIT_SYMBOL[a.step.art];
+  const rainWord = a.rOut >= 40 && a.rHome >= 40 ? 'Brolly' : a.rHome >= 40 ? 'Brolly home' : 'Brolly in';
+  const showers = mode !== 'home' && !!a.midRain;
+  const inline = `Feels ${range} · ${a.step.short}` + (rain ? ` · ${rainWord}` : showers ? ' · Showers' : '');
+  const inlineSymbol: SFSymbol = rain ? 'umbrella.fill' : showers ? 'cloud.rain.fill' : OUTFIT_SYMBOL[a.step.art];
   return {
     skin: s.skin,
     mode,
     label,
     feels,
+    range,
     actual: mode === 'home' ? a.homeTemp : a.actual,
     when: mode === 'home' || a.when === 'home' ? 'way home' : 'way out',
     lo: a.lo,

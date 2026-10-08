@@ -1,7 +1,8 @@
 import * as Notifications from 'expo-notifications';
 
-import { advise, fmtHour, localDayKey, timeAt, type Advice } from '@/engine/advice';
+import { advise, localDayKey, timeAt, type Advice } from '@/engine/advice';
 import type { Forecast, Settings } from '@/engine/types';
+import { alerts } from '@/widgets/sync';
 
 /** How many mornings ahead to schedule. The forecast covers 8 days; the background refresh keeps them up to date. */
 const DAYS_AHEAD = 7;
@@ -15,15 +16,13 @@ Notifications.setNotificationHandler({
   }),
 });
 
-/** The morning message: "Feels 9° · Jacket day" and one or two short sentences. */
+/** The morning message: "Feels 9–17° · Jacket day" and the two things worth acting on, same as the widget. */
 export function morningMessage(a: Advice, s: Settings) {
-  const lines: string[] = [];
-  if (a.brolly) lines.push(`Brolly for the ${a.rOut >= 40 ? 'way in' : 'way home'}, rain from ${fmtHour(a.rainStart ?? s.back)}.`);
-  if (a.warmUp) lines.push(`${a.lunch}° by lunch, so wear layers.`);
-  if (s.cover.skin && a.uv >= 3) lines.push(`UV ${a.uv} around ${fmtHour(a.uvPeak)}, so SPF on.`);
-  if (s.cover.hair && s.hair !== 'short' && a.frizz >= 4) lines.push(a.hair.tip);
-  if (!lines.length) lines.push('Dry all day. Nothing to carry.');
-  return { title: `Feels ${a.mine}° · ${a.step.day}`, body: lines.slice(0, 2).join(' ') };
+  const range = a.peak - a.mine >= 4 ? `${a.mine}–${a.peak}°` : `${a.mine}°`;
+  const lines = alerts(a, s, 'morning')
+    .slice(0, 2)
+    .map((x) => `${x.text}.`);
+  return { title: `Feels ${range} · ${a.step.day}`, body: lines.join(' ') };
 }
 
 /** Ask once. Returns whether notifications are allowed. */

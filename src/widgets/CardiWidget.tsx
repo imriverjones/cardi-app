@@ -24,6 +24,8 @@ export type CardiWidgetProps = {
   feels: number;
   /** Real air temperature at that moment */
   actual: number;
+  /** "9°" or, when the day warms up a lot, "9–17°" */
+  range: string;
   /** "way out" or "way home": which trip the number is for */
   when: string;
   lo: number;
@@ -103,7 +105,7 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
     // Lock Screen box: the verdict, then the two things worth acting on.
     return (
       <VStack alignment="leading" spacing={1} modifiers={[frame({ maxWidth: Infinity, alignment: 'leading' }), link]}>
-        <Text modifiers={[font({ size: 16, weight: 'heavy', design: 'rounded' }), lineLimit(1), minimumScaleFactor(0.8)]}>{props.verdict}</Text>
+        <Text modifiers={[font({ size: 16, weight: 'heavy', design: 'rounded' }), lineLimit(1), minimumScaleFactor(0.75)]}>{`${props.verdict} · ${props.range}`}</Text>
         {props.alerts.slice(0, 2).map((al, i) => (
           <Text key={i} modifiers={[font({ size: 13, weight: 'semibold' }), lineLimit(1), minimumScaleFactor(0.8)]}>
             {al.text}
