@@ -24,6 +24,10 @@ export function DayPlan({ a, s, p, nowH, trips }: { a: Advice; s: Settings; p: P
   const { width } = useWindowDimensions();
   const ringSize = Math.min(width - 60, 300);
   const rows = alerts(a, s, 'morning');
+  // Today the big number is right now; the outfit and the line under it are about what's still to come.
+  const today = nowH != null;
+  const next =
+    today && !a.outDone ? `${a.leaveFeels}° on your way out` : today && nowH < s.back + 1 ? `${a.homeFeels}° on your way home` : 'for the rest of today';
 
   return (
     <>
@@ -37,16 +41,16 @@ export function DayPlan({ a, s, p, nowH, trips }: { a: Advice; s: Settings; p: P
           ]}
           rain={a.rainStart != null ? [a.rainStart, a.rainEnd!] : null}>
           <T w="bold" size={12.5} color={p.ink3}>
-            Feels like for you
+            {today ? 'Feels like now' : 'Feels like for you'}
           </T>
           <T w="black" size={ringSize * 0.22} style={{ letterSpacing: -3, lineHeight: ringSize * 0.24 }}>
-            {`${a.mine}°`}
+            {`${today ? a.nowFeels : a.mine}°`}
           </T>
           <T w="heavy" size={17} style={{ textAlign: 'center' }}>
             {a.step.day}
           </T>
           <T size={13} color={p.ink2} style={{ textAlign: 'center' }}>
-            {`${a.actual}° actual · on your ${a.when === 'out' ? 'way out' : 'way home'}`}
+            {today ? `${a.nowTemp}° actual · ${next}` : `${a.actual}° actual · on your ${a.when === 'out' ? 'way out' : 'way home'}`}
           </T>
         </DayRing>
         {s.cover.outfit && (

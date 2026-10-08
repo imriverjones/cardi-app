@@ -47,11 +47,6 @@ export default function Today() {
   }
 
   const isToday = a.dayKey === localDayKey(forecast, now);
-  // Right now, as the iPhone Weather app shows it, so the two always agree.
-  const current = forecast.hours.reduce<(typeof forecast.hours)[number] | null>(
-    (best, h) => (h.t <= now && (!best || h.t > best.t) ? h : best),
-    null
-  );
   const nowH = isToday ? localHourOf(forecast, now) : null;
   const hour = nowH ?? 0;
   const greeting = hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening';
@@ -86,11 +81,6 @@ export default function Today() {
               {new Date(now).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })} · {a.place}
             </T>
           </Pressable>
-          {current && (
-            <T w="semibold" size={14} color={p.ink2}>
-              {`Now ${Math.round(current.temp)}°, feels ${Math.round(current.feels)}°`}
-            </T>
-          )}
         </View>
         <Pressable
           onPress={() => router.navigate('/me')}

@@ -173,6 +173,14 @@ export type Advice = {
   midRain: [number, number] | null;
   /** Personal feels like when you leave */
   leaveFeels: number;
+  /** Today only: how it feels right now (for you) and the real temperature, same hour Apple Weather shows */
+  nowFeels: number;
+  nowTemp: number;
+  /** Today only: what's still to come, coldest to warmest, for "Feels 11–14°" */
+  spanLo: number;
+  spanHi: number;
+  /** Whether your trip out is already behind you */
+  outDone: boolean;
 };
 
 /**
@@ -308,7 +316,14 @@ export function advise(f: Forecast, s: Settings, dayKey = localDayKey(f, Date.no
   if (hairBag) bag.push(hairBag);
 
   const temps = d.map((h) => h.temp);
+  const nowHour = d[Math.min(23, Math.floor(fromHour))];
+  const nowFeels = Math.round(nowHour.feels - s.bias * 1.5);
   return {
+    nowFeels,
+    nowTemp: Math.round(nowHour.temp),
+    spanLo: Math.min(mine, nowFeels),
+    spanHi: Math.max(peak, nowFeels),
+    outDone,
     place: f.place,
     dayKey,
     hours: d,

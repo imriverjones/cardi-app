@@ -77,10 +77,12 @@ function tiles(a: Advice, s: Settings): CardiWidgetProps['tiles'] {
 }
 
 function entry(a: Advice, s: Settings, mode: CardiWidgetProps['mode']): CardiWidgetProps {
-  const feels = mode === 'home' ? a.homeFeels : a.mine;
+  // Today the big number is how it feels right now; tomorrow's is the trip out.
+  const today = mode !== 'tomorrow';
+  const feels = today ? a.nowFeels : a.mine;
   const verdict = mode === 'home' ? (a.brolly ? 'Brolly out' : a.step.day) : a.step.day;
   const label =
-    mode === 'morning' ? 'Feels like for you' : mode === 'home' ? `Heading home, ${fmtClock(s.back)}` : `Tomorrow, ${fmtClock(s.leave)}`;
+    mode === 'tomorrow' ? `Tomorrow, ${fmtClock(s.leave)}` : 'Feels like now';
   const headline = mode === 'home' ? (a.brolly ? `Rain at ${fmtHour(a.rainStart ?? s.back)}.` : 'Dry way home.') : `${a.step.day}.`;
   const headline2 =
     mode === 'home'
@@ -98,8 +100,8 @@ function entry(a: Advice, s: Settings, mode: CardiWidgetProps['mode']): CardiWid
               : 'Dry all day.';
   const al = alerts(a, s, mode);
   // Above the clock: "Feels 9–17° · Jacket · Brolly home"
-  const swing = mode !== 'home' && a.peak - feels >= 4;
-  const range = swing ? `${feels}–${a.peak}°` : `${feels}°`;
+  const [lo, hi] = today ? [a.spanLo, a.spanHi] : [a.mine, a.peak];
+  const range = hi - lo >= 3 ? `${lo}–${hi}°` : `${feels}°`;
   const rain = mode === 'home' ? a.rHome >= 40 : a.brolly;
   const rainWord = a.rOut >= 40 && a.rHome >= 40 ? 'Brolly' : a.rHome >= 40 ? 'Brolly home' : 'Brolly in';
   const showers = mode !== 'home' && !!a.midRain;
@@ -111,8 +113,8 @@ function entry(a: Advice, s: Settings, mode: CardiWidgetProps['mode']): CardiWid
     label,
     feels,
     range,
-    actual: mode === 'home' ? a.homeTemp : a.actual,
-    when: mode === 'home' || a.when === 'home' ? 'way home' : 'way out',
+    actual: today ? a.nowTemp : a.actual,
+    when: today ? 'now' : 'way out',
     lo: a.lo,
     hi: a.hi,
     verdict,
@@ -141,13 +143,16 @@ export function buildTimeline(f: Forecast, s: Settings, now = Date.now()) {
   const out: { date: Date; props: CardiWidgetProps }[] = [];
   const homeFrom = timeAt(f, today, Math.max(s.leave + 1, s.back - 2));
   const tomorrowFrom = timeAt(f, today, Math.min(23.5, s.back + 1.5));
-  // Once the trip out is over, the rest of the day: no more "5°" from 8am at 2pm.
-  const afterOut = timeAt(f, today, s.leave + 1);
-  const a0Later = advise(f, s, today, s.leave + 1);
-
-  if (a0 && now < homeFrom) out.push({ date: new Date(now), props: entry(a0, s, 'morning') });
-  if (a0Later && now < afterOut && afterOut < homeFrom) out.push({ date: new Date(afterOut), props: entry(a0Later, s, 'morning') });
-  if (a0 && now < tomorrowFrom) out.push({ date: new Date(Math.max(now, homeFrom)), props: entry(a0, s, 'home') });
+  // One entry an hour for the rest of today, so the number on the Lock Screen is always how it feels now.
+  if (a0) {
+    const nowH = localHourOf(f, now);
+    const endH = Math.min(23.5, s.back + 1.5);
+    for (let h = Math.floor(nowH); h < endH; h++) {
+      const at = h <= nowH ? now : timeAt(f, today, h);
+      const a = h <= nowH ? a0 : advise(f, s, today, h);
+      if (a) out.push({ date: new Date(at), props: entry(a, s, at < homeFrom ? 'morning' : 'home') });
+    }
+  }
   if (a1) out.push({ date: new Date(Math.max(now, tomorrowFrom)), props: entry(a1, s, 'tomorrow') });
   // Tomorrow's morning view and trip home, so the widget keeps going if the app isn't opened.
   if (a1) {
