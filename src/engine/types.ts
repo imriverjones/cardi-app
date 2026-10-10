@@ -36,6 +36,8 @@ export type Settings = {
   /** Morning notification on/off, and when (decimal hours) */
   notify: boolean;
   notifyAt: number;
+  /** Days you commute, 0 = Sunday … 6 = Saturday. Other days are planned as a day off. */
+  workDays: number[];
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -54,6 +56,7 @@ export const DEFAULT_SETTINGS: Settings = {
   widgetSnoozeUntil: 0,
   notify: false,
   notifyAt: 7.25,
+  workDays: [1, 2, 3, 4, 5],
 };
 
 /** One forecast hour. `t` is a unix timestamp in ms. */

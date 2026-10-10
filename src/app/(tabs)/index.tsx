@@ -8,7 +8,7 @@ import { Box, Pill, T, tap, Wordmark } from '@/components/ui';
 import { useNow } from '@/components/use-now';
 import { WeatherCredit } from '@/components/weather-credit';
 import { LockPreview } from '@/components/widget-preview';
-import { localDayKey, localHourOf } from '@/engine/advice';
+import { forDay, localDayKey, localHourOf } from '@/engine/advice';
 import { useApp } from '@/state/app-state';
 import { track } from '@/analytics';
 
@@ -51,7 +51,7 @@ export default function Today() {
   const hour = nowH ?? 0;
   const greeting = hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening';
   // Asking how the day felt only makes sense once you're on your way home.
-  const showCheckIn = isToday && hour >= Math.min(16, s.back);
+  const showCheckIn = isToday && hour >= Math.min(16, forDay(s, a.dayKey).back);
   const showWidgetCard = !s.widgetAdded && now > s.widgetSnoozeUntil;
 
   const fbText =

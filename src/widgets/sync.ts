@@ -1,6 +1,6 @@
 import type { SFSymbol } from 'sf-symbols-typescript';
 
-import { advise, fmtClock, fmtHour, localDayKey, localHourOf, timeAt, type Advice } from '@/engine/advice';
+import { advise, fmtClock, fmtHour, forDay, localDayKey, localHourOf, timeAt, type Advice } from '@/engine/advice';
 import type { Forecast, Settings } from '@/engine/types';
 
 import type { CardiWidgetProps } from './CardiWidget';
@@ -21,10 +21,20 @@ const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
  * The things worth acting on, most important first. The Lock Screen shows the top two,
  * so each one is a few words someone can take in at a glance.
  */
-export function alerts(a: Advice, s: Settings, mode: CardiWidgetProps['mode']): Alert[] {
+export function alerts(a: Advice, settings: Settings, mode: CardiWidgetProps['mode']): Alert[] {
+  const s = forDay(settings, a.dayKey);
   const out: Alert[] = [];
   const rainAt = fmtHour(a.rainStart ?? s.back);
-  if (mode === 'home') {
+  if (a.off) {
+    // A day off: no trips to talk about, just whether you'll want a brolly or a layer while you're out.
+    if (a.brolly) out.push({ symbol: 'umbrella.fill', tone: 'rain', text: `Brolly · rain from ${rainAt}`, sub: `${a.rOut}% chance if you're out and about` });
+    if (a.warmUp) out.push({ symbol: 'arrow.up.right', tone: 'layer', text: `Warms to ${a.peak}° by ${fmtHour(a.peakHour)}`, sub: 'Wear layers you can take off' });
+    else if (a.leaveFeels - a.homeFeels >= 4)
+      out.push({ symbol: 'arrow.down.right', tone: 'layer', text: `Cools to ${a.homeFeels}° by ${fmtClock(s.back)}`, sub: "Bring a layer if you're out late" });
+    if (s.cover.skin && a.uv >= 3)
+      out.push({ symbol: 'sun.max.fill', tone: 'sun', text: `SPF · UV ${a.uv} at ${fmtHour(a.uvPeak)}`, sub: a.uv >= 6 ? 'SPF 30+ and sunglasses' : 'Stronger than it feels on a cool day' });
+    if (s.cover.hair && s.hair !== 'short' && a.frizz >= 4) out.push({ symbol: 'humidity.fill', tone: 'hair', text: cap(a.hair.short), sub: a.hair.tip });
+  } else if (mode === 'home') {
     out.push(
       a.rHome >= 40
         ? { symbol: 'umbrella.fill', tone: 'rain', text: 'Brolly for the way home', sub: `${a.rHome}% chance of rain around ${fmtClock(s.back)}` }
@@ -76,13 +86,14 @@ function tiles(a: Advice, s: Settings): CardiWidgetProps['tiles'] {
   return t.slice(0, 4);
 }
 
-function entry(a: Advice, s: Settings, mode: CardiWidgetProps['mode']): CardiWidgetProps {
+function entry(a: Advice, settings: Settings, mode: CardiWidgetProps['mode']): CardiWidgetProps {
+  const s = forDay(settings, a.dayKey);
   // Today the big number is how it feels right now; tomorrow's is the trip out.
   const today = mode !== 'tomorrow';
   const feels = today ? a.nowFeels : a.mine;
   const verdict = mode === 'home' ? (a.brolly ? 'Brolly out' : a.step.day) : a.step.day;
   const label =
-    mode === 'tomorrow' ? `Tomorrow, ${fmtClock(s.leave)}` : 'Feels like now';
+    mode === 'tomorrow' ? (a.off ? 'Tomorrow · day off' : `Tomorrow, ${fmtClock(s.leave)}`) : 'Feels like now';
   const headline = mode === 'home' ? (a.brolly ? `Rain at ${fmtHour(a.rainStart ?? s.back)}.` : 'Dry way home.') : `${a.step.day}.`;
   const headline2 =
     mode === 'home'
@@ -138,15 +149,17 @@ function entry(a: Advice, s: Settings, mode: CardiWidgetProps['mode']): CardiWid
  */
 export function buildTimeline(f: Forecast, s: Settings, now = Date.now()) {
   const today = localDayKey(f, now);
+  const sToday = forDay(s, today);
   const a0 = advise(f, s, today, localHourOf(f, now));
   const a1 = advise(f, s, today + 1);
   const out: { date: Date; props: CardiWidgetProps }[] = [];
-  const homeFrom = timeAt(f, today, Math.max(s.leave + 1, s.back - 2));
-  const tomorrowFrom = timeAt(f, today, Math.min(23.5, s.back + 1.5));
+  // Days off have no trip home, so the "heading home" view never starts.
+  const homeFrom = a0?.off ? Infinity : timeAt(f, today, Math.max(sToday.leave + 1, sToday.back - 2));
+  const tomorrowFrom = timeAt(f, today, Math.min(23.5, sToday.back + 1.5));
   // One entry an hour for the rest of today, so the number on the Lock Screen is always how it feels now.
   if (a0) {
     const nowH = localHourOf(f, now);
-    const endH = Math.min(23.5, s.back + 1.5);
+    const endH = Math.min(23.5, sToday.back + 1.5);
     for (let h = Math.floor(nowH); h < endH; h++) {
       const at = h <= nowH ? now : timeAt(f, today, h);
       const a = h <= nowH ? a0 : advise(f, s, today, h);
@@ -157,7 +170,8 @@ export function buildTimeline(f: Forecast, s: Settings, now = Date.now()) {
   // Tomorrow's morning view and trip home, so the widget keeps going if the app isn't opened.
   if (a1) {
     out.push({ date: new Date(timeAt(f, today + 1, 4)), props: entry(a1, s, 'morning') });
-    out.push({ date: new Date(timeAt(f, today + 1, Math.max(s.leave + 1, s.back - 2))), props: entry(a1, s, 'home') });
+    const s1 = forDay(s, today + 1);
+    if (!a1.off) out.push({ date: new Date(timeAt(f, today + 1, Math.max(s1.leave + 1, s1.back - 2))), props: entry(a1, s, 'home') });
   }
   return out.filter((e, i, arr) => i === 0 || e.date.getTime() > arr[i - 1].date.getTime());
 }

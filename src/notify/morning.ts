@@ -1,6 +1,6 @@
 import * as Notifications from 'expo-notifications';
 
-import { advise, localDayKey, timeAt, type Advice } from '@/engine/advice';
+import { advise, isWorkDay, localDayKey, timeAt, type Advice } from '@/engine/advice';
 import type { Forecast, Settings } from '@/engine/types';
 import { alerts } from '@/widgets/sync';
 
@@ -46,7 +46,8 @@ export async function scheduleMornings(f: Forecast, s: Settings, now = Date.now(
     if (!perm.granted) return;
     const today = localDayKey(f, now);
     for (let d = 0; d < DAYS_AHEAD; d++) {
-      const at = timeAt(f, today + d, s.notifyAt);
+      // No alarm-clock heads-up on a day off: it waits until 9am at the earliest.
+      const at = timeAt(f, today + d, isWorkDay(s, today + d) ? s.notifyAt : Math.max(s.notifyAt, 9));
       if (at <= now + 60_000) continue;
       const a = advise(f, s, today + d);
       if (!a) continue;

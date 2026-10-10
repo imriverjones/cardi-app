@@ -122,6 +122,21 @@ export function personal(v: number, s: Settings) {
   return Math.round(v - s.bias * 1.5 + move);
 }
 
+/* ---------- work days and days off ---------- */
+
+/** On a day off there's no commute: Cardi plans for being out and about between these hours. */
+export const DAY_OFF = { leave: 10, back: 17 };
+
+/** 0 = Sunday … 6 = Saturday. Day keys count local days from 1 Jan 1970, a Thursday. */
+export const weekday = (dayKey: number) => (((dayKey + 4) % 7) + 7) % 7;
+
+export const isWorkDay = (s: Settings, dayKey: number) => (s.workDays ?? [1, 2, 3, 4, 5]).includes(weekday(dayKey));
+
+/** The settings that apply on this day: on days off, a 10am–5pm window and no commute. */
+export function forDay(s: Settings, dayKey: number): Settings {
+  return isWorkDay(s, dayKey) ? s : { ...s, ...DAY_OFF, cover: { ...s.cover, commute: false } };
+}
+
 /* ---------- the advice ---------- */
 
 export type Line = { s: string; m: string };
@@ -181,21 +196,28 @@ export type Advice = {
   spanHi: number;
   /** Whether your trip out is already behind you */
   outDone: boolean;
+  /** A day off: no commute, just the hours you might be out and about */
+  off: boolean;
 };
 
 /**
  * `fromHour` is the local hour "now" when this is today's advice. Once the trip out is over,
  * the advice only looks at what's still ahead, so at 2pm it isn't still saying how cold 8am was.
  */
-export function advise(f: Forecast, s: Settings, dayKey = localDayKey(f, Date.now()), fromHour = 0): Advice | null {
+export function advise(f: Forecast, settings: Settings, dayKey = localDayKey(f, Date.now()), fromHour = 0): Advice | null {
   const d = hoursForDay(f, dayKey);
   if (d.length < 24) return null;
 
-  const outDone = fromHour >= s.leave + 1;
-  const ahead = (h: number) => !outDone || h >= Math.floor(fromHour);
-  const legOut = range(s.leave, s.leave + 1);
-  const legHome = range(s.back, s.back + 1);
-  const out = outDone ? legHome : [...new Set([...legOut, ...legHome])];
+  const off = !isWorkDay(settings, dayKey);
+  const s = forDay(settings, dayKey);
+  // Work days: two trips. Days off: the whole 10am–5pm window, or what's left of it.
+  const nowH = Math.min(23, Math.floor(fromHour));
+  const window = range(s.leave, s.back).filter((h) => h >= nowH);
+  const outDone = !off && fromHour >= s.leave + 1;
+  const ahead = (h: number) => (off ? h >= nowH : !outDone || h >= nowH);
+  const legOut = off ? (window.length ? window : [nowH]) : range(s.leave, s.leave + 1);
+  const legHome = off ? [Math.min(23, Math.ceil(s.back))] : range(s.back, s.back + 1);
+  const out = off ? legOut : outDone ? legHome : [...new Set([...legOut, ...legHome])];
 
   const standard = Math.round(Math.min(...out.map((h) => d[h].feels)));
   const mine = personal(standard, s);
@@ -222,9 +244,9 @@ export function advise(f: Forecast, s: Settings, dayKey = localDayKey(f, Date.no
   const rainEnd = rainHrs.length ? rainHrs[rainHrs.length - 1] : null;
   // Rain on a trip that's already happened doesn't need a brolly any more.
   const rOut = outDone ? 0 : Math.round(Math.max(...legOut.map((h) => d[h].rain)));
-  const rHome = Math.round(Math.max(...legHome.map((h) => d[h].rain)));
+  const rHome = off ? rOut : Math.round(Math.max(...legHome.map((h) => d[h].rain)));
   const brolly = Math.max(rOut, rHome) >= 40;
-  const midHrs = range(s.leave + 1, s.back - 0.5).filter((h) => ahead(h) && d[h].rain >= 50);
+  const midHrs = off ? [] : range(s.leave + 1, s.back - 0.5).filter((h) => ahead(h) && d[h].rain >= 50);
   const midRain: [number, number] | null = !brolly && midHrs.length ? [midHrs[0], midHrs[midHrs.length - 1] + 1] : null;
 
   const uvVals = d.map((h, i) => (ahead(i) ? h.uv : 0));
@@ -324,6 +346,7 @@ export function advise(f: Forecast, s: Settings, dayKey = localDayKey(f, Date.no
     spanLo: Math.min(mine, nowFeels),
     spanHi: Math.max(peak, nowFeels),
     outDone,
+    off,
     place: f.place,
     dayKey,
     hours: d,

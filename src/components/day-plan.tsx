@@ -3,7 +3,7 @@ import { View, useWindowDimensions } from 'react-native';
 
 import { DayRing } from '@/components/day-ring';
 import { Box, T } from '@/components/ui';
-import { fmtClock, type Advice } from '@/engine/advice';
+import { fmtClock, forDay, type Advice } from '@/engine/advice';
 import type { Settings } from '@/engine/types';
 import type { Palette } from '@/theme/skins';
 import type { Tone } from '@/widgets/CardiWidget';
@@ -20,14 +20,16 @@ export const toneColors = (p: Palette, tone: Tone) =>
   })[tone];
 
 /** The ring, the outfit line and the short list: one day's plan. Used by Today and by a day from Week. */
-export function DayPlan({ a, s, p, nowH, trips }: { a: Advice; s: Settings; p: Palette; nowH: number | null; trips?: boolean }) {
+export function DayPlan({ a, s: settings, p, nowH, trips }: { a: Advice; s: Settings; p: Palette; nowH: number | null; trips?: boolean }) {
+  const s = forDay(settings, a.dayKey);
   const { width } = useWindowDimensions();
   const ringSize = Math.min(width - 60, 300);
   const rows = alerts(a, s, 'morning');
   // Today the big number is right now; the outfit and the line under it are about what's still to come.
   const today = nowH != null;
-  const next =
-    today && !a.outDone ? `${a.leaveFeels}° on your way out` : today && nowH < s.back + 1 ? `${a.homeFeels}° on your way home` : 'for the rest of today';
+  const next = a.off
+    ? 'day off'
+    : today && !a.outDone ? `${a.leaveFeels}° on your way out` : today && nowH < s.back + 1 ? `${a.homeFeels}° on your way home` : 'for the rest of today';
 
   return (
     <>
@@ -35,10 +37,14 @@ export function DayPlan({ a, s, p, nowH, trips }: { a: Advice; s: Settings; p: P
         <DayRing
           size={ringSize}
           nowHour={nowH}
-          out={[
-            [s.leave, s.leave + 1],
-            [s.back, s.back + 1],
-          ]}
+          out={
+            a.off
+              ? [[s.leave, s.back]]
+              : [
+                  [s.leave, s.leave + 1],
+                  [s.back, s.back + 1],
+                ]
+          }
           rain={a.rainStart != null ? [a.rainStart, a.rainEnd!] : null}>
           <T w="bold" size={12.5} color={p.ink3}>
             {today ? 'Feels like now' : 'Feels like for you'}
@@ -50,7 +56,7 @@ export function DayPlan({ a, s, p, nowH, trips }: { a: Advice; s: Settings; p: P
             {a.step.day}
           </T>
           <T size={13} color={p.ink2} style={{ textAlign: 'center' }}>
-            {today ? `${a.nowTemp}° actual · ${next}` : `${a.actual}° actual · on your ${a.when === 'out' ? 'way out' : 'way home'}`}
+            {today ? `${a.nowTemp}° actual · ${next}` : a.off ? `${a.actual}° actual · day off` : `${a.actual}° actual · on your ${a.when === 'out' ? 'way out' : 'way home'}`}
           </T>
         </DayRing>
         {s.cover.outfit && (
@@ -60,7 +66,7 @@ export function DayPlan({ a, s, p, nowH, trips }: { a: Advice; s: Settings; p: P
         )}
       </View>
 
-      {trips && (
+      {trips && !a.off && (
         <View style={{ flexDirection: 'row', gap: 10 }}>
           {[
             { label: `Out at ${fmtClock(s.leave)}`, feels: a.leaveFeels, rain: a.rOut },

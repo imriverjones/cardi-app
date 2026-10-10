@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BIAS_OPTIONS, COVER_OPTIONS, SkinPicker, TimeStepper } from '@/components/settings-parts';
 import { BigButton, Box, Row, Seg, T, tap } from '@/components/ui';
+import { WorkDays } from '@/components/work-days';
 import { askToNotify } from '@/notify/morning';
 import { useApp } from '@/state/app-state';
 import { FONT } from '@/theme/skins';
@@ -51,8 +52,12 @@ export default function Me() {
           <TimeStepper label="home time" value={s.back} onChange={(back) => update({ back: Math.max(back, s.leave + 0.5) })} />
         </Row>
       </Box>
+      <T w="semibold" style={{ marginTop: 6, paddingHorizontal: 6 }}>
+        Days you commute
+      </T>
+      <WorkDays />
       <T size={13} color={p.ink3} style={{ paddingHorizontal: 6 }}>
-        Your feels like covers the hours you’re actually outside, not just right now.
+        On other days there’s no commute: Cardi plans for being out and about 10am–5pm, and the morning heads-up waits until 9am.
       </T>
 
       <T w="heavy" size={17} style={{ marginTop: 14 }}>

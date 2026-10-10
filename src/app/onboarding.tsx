@@ -8,6 +8,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { Outfit, Waves } from '@/components/art';
 import { BIAS_OPTIONS, COVER_OPTIONS, Option, SkinPicker, TimeStepper } from '@/components/settings-parts';
 import { BigButton, Box, Row, Seg, T, tap, Wordmark } from '@/components/ui';
+import { WorkDays } from '@/components/work-days';
 import { askToNotify } from '@/notify/morning';
 import { useApp } from '@/state/app-state';
 import { FONT } from '@/theme/skins';
@@ -243,6 +244,13 @@ export default function Onboarding() {
                 <TimeStepper label="home time" value={s.back} onChange={(back) => update({ back: Math.max(back, s.leave + 0.5) })} />
               </Row>
             </Box>
+            <T w="heavy" style={{ marginTop: 6 }}>
+              Which days?
+            </T>
+            <WorkDays />
+            <T size={13} color={p.ink3}>
+              Other days are days off: Cardi plans for being out and about 10am–5pm.
+            </T>
             {s.cover.commute && (
               <>
                 <T w="heavy" style={{ marginTop: 6 }}>
