@@ -1,23 +1,21 @@
-# Every push to main builds the iPhone app in Expo's cloud and sends it to TestFlight.
-# One-time setup first: see README, "First build".
+# Push to the "testflight" branch to build the iPhone app on Expo's servers and send it to TestFlight.
+# Nothing reaches the App Store until you pick the build in App Store Connect and tap Add for Review.
 name: Build and send to TestFlight
 
 on:
   push:
-    branches: ['main']
+    branches: ['testflight']
 
 jobs:
   build_ios:
-    name: Build iOS
+    name: Build iPhone app
     type: build
     params:
       platform: ios
       profile: production
-
   submit_ios:
     name: Send to TestFlight
-    type: submit
     needs: [build_ios]
+    type: submit
     params:
       build_id: ${{ needs.build_ios.outputs.build_id }}
-      profile: production
