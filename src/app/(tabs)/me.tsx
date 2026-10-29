@@ -49,9 +49,13 @@ export default function Me() {
           <T w="semibold">Leave home</T>
           <TimeStepper label="leave time" value={s.leave} onChange={(leave) => update({ leave: Math.min(leave, s.back - 0.5) })} />
         </Row>
-        <Row last>
+        <Row>
           <T w="semibold">Head home</T>
           <TimeStepper label="home time" value={s.back} onChange={(back) => update({ back: Math.max(back, s.leave + 0.5) })} />
+        </Row>
+        <Row last>
+          <T w="semibold">Widget shows tomorrow from</T>
+          <TimeStepper label="tomorrow time" value={s.tomorrowAt} onChange={(tomorrowAt) => update({ tomorrowAt: Math.min(23.5, Math.max(tomorrowAt, s.back + 0.5)) })} />
         </Row>
       </Box>
       <T w="semibold" style={{ marginTop: 6, paddingHorizontal: 6 }}>

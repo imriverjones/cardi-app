@@ -1,6 +1,6 @@
 import type { SFSymbol } from 'sf-symbols-typescript';
 
-import { advise, fmtClock, fmtHour, forDay, localDayKey, localHourOf, timeAt, type Advice } from '@/engine/advice';
+import { advise, fmtClock, fmtHour, forDay, isWorkDay, localDayKey, localHourOf, timeAt, type Advice } from '@/engine/advice';
 import type { Forecast, Settings } from '@/engine/types';
 import { deg, setUnits, t as tStr, wind } from '@/engine/units';
 
@@ -172,36 +172,35 @@ function entry(a: Advice, settings: Settings, mode: CardiWidgetProps['mode']): C
   };
 }
 
+/** When the widget turns to tomorrow: your setting, but never before you're home. */
+export function flipHour(s: Settings, day: number) {
+  return Math.min(23.5, Math.max(s.tomorrowAt ?? 20, forDay(s, day).back + 0.5));
+}
+
 /**
  * The widget shows the right moment of the day without the app running:
- * the morning view, then the trip home from 2 hours before you leave work,
- * then tomorrow's outfit from an hour after you get home.
+ * from 5am it's how it feels now, hour by hour (the trip home takes over late afternoon),
+ * and from your "show tomorrow from" time in the evening it's tomorrow's plan, ready for when you wake up.
  */
 export function buildTimeline(f: Forecast, s: Settings, now = Date.now()) {
   const today = localDayKey(f, now);
-  const sToday = forDay(s, today);
-  const a0 = advise(f, s, today, localHourOf(f, now));
-  const a1 = advise(f, s, today + 1);
+  const nowH = localHourOf(f, now);
   const out: { date: Date; props: CardiWidgetProps }[] = [];
-  // Days off have no trip home, so the "heading home" view never starts.
-  const homeFrom = a0?.off ? Infinity : timeAt(f, today, Math.max(sToday.leave + 1, sToday.back - 2));
-  const tomorrowFrom = timeAt(f, today, Math.min(23.5, sToday.back + 1.5));
-  // One entry an hour for the rest of today, so the number on the Lock Screen is always how it feels now.
-  if (a0) {
-    const nowH = localHourOf(f, now);
-    const endH = Math.min(23.5, sToday.back + 1.5);
-    for (let h = Math.floor(nowH); h < endH; h++) {
-      const at = h <= nowH ? now : timeAt(f, today, h);
-      const a = h <= nowH ? a0 : advise(f, s, today, h);
+  for (const day of [today, today + 1]) {
+    const ds = forDay(s, day);
+    const flip = timeAt(f, day, flipHour(s, day));
+    // Days off have no trip home, so the "heading home" view never starts.
+    const homeFrom = isWorkDay(s, day) ? timeAt(f, day, Math.max(ds.leave + 1, ds.back - 2)) : Infinity;
+    // Today: an entry for right now, then one an hour. Tomorrow: from 5am, before anyone is looking.
+    for (let h = day === today ? Math.floor(nowH) : 5; h < flipHour(s, day); h++) {
+      const isNow = day === today && h <= nowH;
+      const at = isNow ? now : timeAt(f, day, h);
+      if (at >= flip) break;
+      const a = advise(f, s, day, isNow ? nowH : h);
       if (a) out.push({ date: new Date(at), props: entry(a, s, at < homeFrom ? 'morning' : 'home') });
     }
-  }
-  if (a1) out.push({ date: new Date(Math.max(now, tomorrowFrom)), props: entry(a1, s, 'tomorrow') });
-  // Tomorrow's morning view and trip home, so the widget keeps going if the app isn't opened.
-  if (a1) {
-    out.push({ date: new Date(timeAt(f, today + 1, 4)), props: entry(a1, s, 'morning') });
-    const s1 = forDay(s, today + 1);
-    if (!a1.off) out.push({ date: new Date(timeAt(f, today + 1, Math.max(s1.leave + 1, s1.back - 2))), props: entry(a1, s, 'home') });
+    const next = advise(f, s, day + 1);
+    if (next) out.push({ date: new Date(Math.max(now, flip)), props: entry(next, s, 'tomorrow') });
   }
   return out.filter((e, i, arr) => i === 0 || e.date.getTime() > arr[i - 1].date.getTime());
 }

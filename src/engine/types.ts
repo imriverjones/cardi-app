@@ -43,6 +43,8 @@ export type Settings = {
   speed: 'auto' | 'kmh' | 'mph';
   /** A heads-up 30 minutes before a trip if rain or snow is on the way */
   rainAlerts: boolean;
+  /** From this hour in the evening the widget shows tomorrow instead of today (never before you're home) */
+  tomorrowAt: number;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -65,6 +67,7 @@ export const DEFAULT_SETTINGS: Settings = {
   temp: 'auto',
   speed: 'auto',
   rainAlerts: true,
+  tomorrowAt: 20,
 };
 
 /** One forecast hour. `t` is a unix timestamp in ms. */
