@@ -9,7 +9,7 @@ import { SKIN_LIST, SKINS } from '@/theme/skins';
 import { T, tap } from './ui';
 
 export const COVER_OPTIONS: { key: keyof Cover; title: string; sub: string }[] = [
-  { key: 'outfit', title: 'Outfit', sub: 'What to wear, from your own feels like' },
+  { key: 'outfit', title: 'Coat', sub: 'Whether you need one, from your own feels like' },
   { key: 'hair', title: 'Hair', sub: 'Frizz, flat or static, before you style it' },
   { key: 'skin', title: 'Skin & SPF', sub: 'UV, even on cool days' },
   { key: 'commute', title: 'Commute', sub: 'Walking, cycling or bus, wet or dry' },
@@ -18,11 +18,11 @@ export const COVER_OPTIONS: { key: keyof Cover; title: string; sub: string }[] =
 ];
 
 export const BIAS_OPTIONS: { v: number; title: string; sub?: string }[] = [
-  { v: 3, title: "I'm always cold", sub: 'Feels about 4° colder to me' },
+  { v: 3, title: "I'm always cold", sub: 'Everything feels colder to me' },
   { v: 1, title: 'A bit chilly usually' },
   { v: 0, title: 'About average' },
   { v: -1, title: 'A bit warm usually' },
-  { v: -3, title: "I'm always too warm", sub: 'Feels about 4° warmer to me' },
+  { v: -3, title: "I'm always too warm", sub: 'Everything feels warmer to me' },
 ];
 
 /** A big tappable option with a tick, used in setup. */

@@ -5,6 +5,7 @@ import { AppState } from 'react-native';
 import { advise, localDayKey, localHourOf, type Advice } from '@/engine/advice';
 import { useNow } from '@/components/use-now';
 import { DEFAULT_SETTINGS, type Forecast, type Settings } from '@/engine/types';
+import { setUnits } from '@/engine/units';
 import { SKINS, type Palette } from '@/theme/skins';
 import { cachedForecast, currentPlace, fetchForecast, isFresh } from '@/weather/forecast';
 import { scheduleMornings } from '@/notify/morning';
@@ -139,6 +140,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => sub.remove();
   }, [refresh, feedback]);
 
+  // °C or °F and km/h or mph for everything drawn from here on.
+  setUnits(settings);
   // Recomputed every minute, so the advice moves on once you've left the house.
   const now = useNow();
   const advice = forecast ? advise(forecast, settings, localDayKey(forecast, now), localHourOf(forecast, now)) : null;

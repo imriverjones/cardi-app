@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -15,6 +16,7 @@ export default function DayScreen() {
   const { forecast, settings: s, palette: p } = useApp();
   const { k } = useLocalSearchParams<{ k?: string }>();
   const insets = useSafeAreaInsets();
+  const [scrubbing, setScrubbing] = useState(false);
   const now = useNow();
   const dayKey = Number(k);
   const a = forecast && Number.isFinite(dayKey) ? advise(forecast, s, dayKey) : null;
@@ -24,7 +26,7 @@ export default function DayScreen() {
     : new Date(dayKey * 86_400_000 + 12 * 3_600_000).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: p.bg2 }} contentContainerStyle={{ paddingTop: insets.top + 10, paddingBottom: 40, paddingHorizontal: 20, gap: 18 }}>
+    <ScrollView scrollEnabled={!scrubbing} style={{ flex: 1, backgroundColor: p.bg2 }} contentContainerStyle={{ paddingTop: insets.top + 10, paddingBottom: 40, paddingHorizontal: 20, gap: 18 }}>
       <View style={{ position: 'absolute', top: -400, left: -20, right: -20, height: 760, backgroundColor: p.bg1 }} />
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <Pressable
@@ -53,7 +55,7 @@ export default function DayScreen() {
 
       {a && forecast ? (
         <>
-          <DayPlan a={a} s={s} p={p} nowH={isToday ? localHourOf(forecast, now) : null} trips />
+          <DayPlan a={a} s={s} p={p} nowH={isToday ? localHourOf(forecast, now) : null} trips onScrubbing={setScrubbing} />
           <WeatherCredit forecast={forecast} />
         </>
       ) : (

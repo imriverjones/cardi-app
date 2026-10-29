@@ -7,11 +7,13 @@ import { BigButton, Box, Row, Seg, T, tap } from '@/components/ui';
 import { WorkDays } from '@/components/work-days';
 import { askToNotify } from '@/notify/morning';
 import { useApp } from '@/state/app-state';
+import { resolvedUnits } from '@/engine/units';
 import { FONT } from '@/theme/skins';
 import { track } from '@/analytics';
 
 export default function Me() {
   const { settings: s, update, palette: p, forecast } = useApp();
+  const units = resolvedUnits(s);
   const insets = useSafeAreaInsets();
 
   return (
@@ -88,16 +90,20 @@ export default function Me() {
 
       <Box style={{ marginTop: 10 }}>
         <Row>
-          <T w="semibold">You usually wear</T>
-          <Seg value={s.wear} onChange={(wear) => update({ wear })} options={[['trousers', 'Trousers & jeans'], ['dresses', 'Dresses & skirts'], ['mix', 'A mix']]} />
-        </Row>
-        <Row>
           <T w="semibold">Your hair</T>
           <Seg value={s.hair} onChange={(hair) => update({ hair })} options={[['curly', 'Curly'], ['wavy', 'Wavy'], ['straight', 'Straight'], ['short', 'Short']]} />
         </Row>
-        <Row last>
+        <Row>
           <T w="semibold">You get about by</T>
           <Seg value={s.move} onChange={(move) => update({ move })} options={[['walk', 'Walking'], ['cycle', 'Cycling'], ['transit', 'Bus or train']]} />
+        </Row>
+        <Row>
+          <T w="semibold">Temperature</T>
+          <Seg value={units.temp} onChange={(temp) => update({ temp })} options={[['c', '°C'], ['f', '°F']]} />
+        </Row>
+        <Row last>
+          <T w="semibold">Wind</T>
+          <Seg value={units.speed} onChange={(speed) => update({ speed })} options={[['kmh', 'km/h'], ['mph', 'mph']]} />
         </Row>
       </Box>
 
@@ -137,14 +143,33 @@ export default function Me() {
           />
         </Row>
         {s.notify && (
-          <Row last>
+          <Row>
             <T w="semibold">Send it at</T>
             <TimeStepper label="notification time" value={s.notifyAt} onChange={(notifyAt) => update({ notifyAt })} />
           </Row>
         )}
+        <Row last>
+          <T w="semibold">Rain or snow on the way</T>
+          <Seg
+            value={s.rainAlerts ? 'on' : 'off'}
+            options={[
+              ['on', 'On'],
+              ['off', 'Off'],
+            ]}
+            onChange={async (v) => {
+              if (v === 'off') {
+                track('rain_alerts_changed', { on: false });
+                return update({ rainAlerts: false });
+              }
+              const ok = await askToNotify();
+              track('rain_alerts_changed', { on: ok });
+              update({ rainAlerts: ok });
+            }}
+          />
+        </Row>
       </Box>
       <T size={13} color={p.ink3} style={{ paddingHorizontal: 6 }}>
-        One line each morning: your feels like, the outfit, and anything to bring. If it won’t turn on, allow notifications in Settings › Cardi.
+        Each morning: your feels like, coat or not, and anything to bring. Rain or snow: a nudge 30 minutes before you head out or home if it’s due on the way. If they won’t turn on, allow notifications in Settings › Cardi.
       </T>
 
       <T w="heavy" size={17} style={{ marginTop: 14 }}>

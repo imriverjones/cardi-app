@@ -1,4 +1,5 @@
 import type { Forecast, Hour, Settings } from './types';
+import { t as tStr, wind as windStr } from './units';
 
 /* ---------- time helpers (all in the forecast location's local time) ---------- */
 
@@ -62,33 +63,13 @@ export const MOVE = {
 
 type StepKey = 'bigcoat' | 'coat' | 'jacket' | 'light' | 'tee';
 
-/** What to wear, in the words that fit how you dress. No gender assumed. */
-const WEAR: Record<StepKey, Record<Settings['wear'], string>> = {
-  bigcoat: {
-    trousers: 'Warmest coat, scarf, gloves and a hat',
-    dresses: 'Warmest coat, thick tights and a scarf',
-    mix: 'Your warmest coat, scarf and gloves',
-  },
-  coat: {
-    trousers: 'A proper coat over a jumper',
-    dresses: 'Coat over a knit, with thick tights',
-    mix: 'A proper coat over a cosy knit',
-  },
-  jacket: {
-    trousers: 'Denim jacket or overshirt over a jumper',
-    dresses: 'Denim jacket over a soft knit, tights on',
-    mix: 'Denim jacket over a soft knit',
-  },
-  light: {
-    trousers: 'A light jumper or overshirt',
-    dresses: 'A light knit. Bare legs by lunch',
-    mix: 'A light knit or an open shirt',
-  },
-  tee: {
-    trousers: 'T-shirt and shorts weather',
-    dresses: "A sundress or a tee, that's it",
-    mix: "A tee, and that's it",
-  },
+/** One line under the verdict. Cardi only calls the coat; the rest is up to you. */
+const WEAR: Record<StepKey, string> = {
+  bigcoat: 'Your warmest coat, plus gloves',
+  coat: 'Coat on',
+  jacket: 'A light jacket will do',
+  light: 'No coat needed',
+  tee: 'No coat needed',
 };
 
 export type Step = {
@@ -101,12 +82,13 @@ export type Step = {
   kid: string;
 };
 
+// Thresholds are personal feels like in °C. Cardi only says whether you need a coat (and a brolly).
 export const STEPS: Step[] = [
-  { max: 3, key: 'bigcoat', day: 'Big coat day', short: 'Big coat', art: 'coat', bag: 'Gloves', kid: 'Big coat, hat and gloves' },
-  { max: 8, key: 'coat', day: 'Coat day', short: 'Coat', art: 'coat', bag: 'Scarf', kid: 'Winter coat and a hat' },
-  { max: 13, key: 'jacket', day: 'Jacket day', short: 'Jacket', art: 'jacket', bag: 'Jacket', kid: 'Coat over a jumper' },
-  { max: 17, key: 'light', day: 'Light layer day', short: 'Light layer', art: 'knit', bag: 'Layer', kid: 'A hoodie or light jacket' },
-  { max: 99, key: 'tee', day: 'T-shirt day', short: 'T-shirt', art: 'tee', bag: null, kid: 'T-shirt, plus a sun hat' },
+  { max: 3, key: 'bigcoat', day: 'Big coat', short: 'Big coat', art: 'coat', bag: 'Gloves', kid: 'Big coat, hat and gloves' },
+  { max: 9, key: 'coat', day: 'Coat', short: 'Coat', art: 'coat', bag: null, kid: 'Winter coat and a hat' },
+  { max: 14, key: 'jacket', day: 'Light jacket', short: 'Light jacket', art: 'jacket', bag: null, kid: 'Coat over a jumper' },
+  { max: 18, key: 'light', day: 'No coat', short: 'No coat', art: 'tee', bag: null, kid: 'A hoodie or light jacket' },
+  { max: 99, key: 'tee', day: 'No coat', short: 'No coat', art: 'tee', bag: null, kid: 'T-shirt, plus a sun hat' },
 ];
 
 export function stepFor(feels: number, windy: boolean): Step {
@@ -121,6 +103,14 @@ export function personal(v: number, s: Settings) {
   const move = s.cover.commute ? MOVE[s.move].adj : 0;
   return Math.round(v - s.bias * 1.5 + move);
 }
+
+/* ---------- rain and snow ---------- */
+
+/** Snow, from Apple's condition for the hour, or likely precipitation at freezing. */
+export const isSnow = (h: Hour) => (h.code >= 71 && h.code <= 77) || h.code === 85 || h.code === 86 || (h.rain >= 40 && h.temp <= 0.5);
+
+/** Chance of getting wet or snowed on (%). An hour Apple calls snowy counts as likely even if its chance reads low. */
+export const wetChance = (h: Hour) => Math.round(Math.max(h.rain, isSnow(h) ? 60 : 0));
 
 /* ---------- work days and days off ---------- */
 
@@ -196,8 +186,16 @@ export type Advice = {
   spanHi: number;
   /** Whether your trip out is already behind you */
   outDone: boolean;
+  /** It gets at least 4° colder between now (or when you leave) and the trip home */
+  cools: boolean;
   /** A day off: no commute, just the hours you might be out and about */
   off: boolean;
+  /** Snow rather than rain on the way out, on the way home, or at any point in the day */
+  snowOut: boolean;
+  snowHome: boolean;
+  snowy: boolean;
+  /** Today only: the next hour with rain or snow, if it's within 3 hours */
+  nextWet: { h: number; snow: boolean; pct: number; now: boolean } | null;
 };
 
 /**
@@ -228,25 +226,39 @@ export function advise(f: Forecast, settings: Settings, dayKey = localDayKey(f, 
   const maxWind = Math.round(Math.max(...out.map((h) => d[h].wind)));
   const windy = maxWind >= 30;
   const step = stepFor(mine, windy);
-  const wear = WEAR[step.key][s.wear] ?? WEAR[step.key].mix;
+  const wear = WEAR[step.key];
   const lunch = personal(d[13].feels, s);
   // Warmest point of the hours you're away, so we can say "warms to 17° by 2pm".
   const awayAll = range(s.leave, s.back).filter(ahead);
   const awayHours = awayAll.length ? awayAll : legHome;
   const peakHour = awayHours.reduce((x, y) => (d[y].feels > d[x].feels ? y : x), awayHours[0] ?? 13);
   const peak = personal(d[peakHour].feels, s);
-  const warmUp = peak - mine >= 5;
+  // "Warms to…" only means something if the warmest point is still to come.
+  const warmUp = peak - mine >= 5 && peakHour > nowH;
   const leaveFeels = personal(Math.min(...legOut.map((h) => d[h].feels)), s);
   const homeFeels = personal(Math.min(...legHome.map((h) => d[h].feels)), s);
 
-  const rainHrs = d.map((h, i) => (i >= 7 && i <= 22 && h.rain >= 40 ? i : -1)).filter((i) => i >= 0);
+  const rainHrs = d.map((h, i) => (i >= 7 && i <= 22 && wetChance(h) >= 40 ? i : -1)).filter((i) => i >= 0);
   const rainStart = rainHrs.length ? rainHrs[0] : null;
   const rainEnd = rainHrs.length ? rainHrs[rainHrs.length - 1] : null;
   // Rain on a trip that's already happened doesn't need a brolly any more.
-  const rOut = outDone ? 0 : Math.round(Math.max(...legOut.map((h) => d[h].rain)));
-  const rHome = off ? rOut : Math.round(Math.max(...legHome.map((h) => d[h].rain)));
+  const rOut = outDone ? 0 : Math.max(...legOut.map((h) => wetChance(d[h])));
+  const rHome = off ? rOut : Math.max(...legHome.map((h) => wetChance(d[h])));
+  // Snow rather than rain, for the words and the icon.
+  const snowOut = !outDone && legOut.some((h) => isSnow(d[h]));
+  const snowHome = legHome.some((h) => isSnow(d[h]));
+  const snowy = rainHrs.some((h) => isSnow(d[h]));
+  // Today only: rain or snow due in the next few hours, for "Rain from 3pm" on the widget.
+  const live = fromHour > 0;
+  let nextWet: Advice['nextWet'] = null;
+  if (live)
+    for (let h = nowH; h <= Math.min(23, nowH + 3); h++)
+      if (wetChance(d[h]) >= 40) {
+        nextWet = { h, snow: isSnow(d[h]), pct: wetChance(d[h]), now: h === nowH };
+        break;
+      }
   const brolly = Math.max(rOut, rHome) >= 40;
-  const midHrs = off ? [] : range(s.leave + 1, s.back - 0.5).filter((h) => ahead(h) && d[h].rain >= 50);
+  const midHrs = off ? [] : range(s.leave + 1, s.back - 0.5).filter((h) => ahead(h) && wetChance(d[h]) >= 50);
   const midRain: [number, number] | null = !brolly && midHrs.length ? [midHrs[0], midHrs[midHrs.length - 1] + 1] : null;
 
   const uvVals = d.map((h, i) => (ahead(i) ? h.uv : 0));
@@ -301,9 +313,9 @@ export function advise(f: Forecast, settings: Settings, dayKey = localDayKey(f, 
       s.move === 'cycle'
         ? rHome >= 40 || rOut >= 40
           ? 'Pack waterproof trousers'
-          : `Wind ${maxWind} km/h, ${maxWind >= 22 ? "so it'll feel colder" : 'easy riding'}`
+          : `Wind ${windStr(maxWind)}, ${maxWind >= 22 ? "so it'll feel colder" : 'easy riding'}`
         : s.move === 'transit'
-          ? `Waiting at the stop feels about ${mine}°`
+          ? `Waiting at the stop feels about ${tStr(mine)}`
           : brolly
             ? 'Brolly in your bag'
             : 'No brolly needed',
@@ -313,7 +325,7 @@ export function advise(f: Forecast, settings: Settings, dayKey = localDayKey(f, 
   const kidStep = stepFor(kidFeels, d[8].wind >= 30);
   const kids: Line = {
     s: kidStep.kid,
-    m: d[8].rain >= 40 || d[15].rain >= 40 ? 'Plus wellies and a waterproof' : `Feels ${kidFeels}° at drop-off`,
+    m: d[8].rain >= 40 || d[15].rain >= 40 ? 'Plus wellies and a waterproof' : `Feels ${tStr(kidFeels)} at drop-off`,
   };
 
   let dryUntil = 9;
@@ -340,7 +352,9 @@ export function advise(f: Forecast, settings: Settings, dayKey = localDayKey(f, 
   const temps = d.map((h) => h.temp);
   const nowHour = d[Math.min(23, Math.floor(fromHour))];
   const nowFeels = Math.round(nowHour.feels - s.bias * 1.5);
+  const cools = (outDone ? nowFeels : leaveFeels) - homeFeels >= 4;
   return {
+    cools,
     nowFeels,
     nowTemp: Math.round(nowHour.temp),
     spanLo: Math.min(mine, nowFeels),
@@ -366,6 +380,10 @@ export function advise(f: Forecast, settings: Settings, dayKey = localDayKey(f, 
     lo: Math.round(Math.min(...temps)),
     rainStart,
     rainEnd,
+    snowOut,
+    snowHome,
+    snowy,
+    nextWet,
     rOut,
     rHome,
     brolly,

@@ -50,10 +50,10 @@ export default function WidgetsScreen() {
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingTop: 28, gap: 16 }}>
         <View style={{ gap: 6 }}>
           <T w="heavy" size={26} style={{ letterSpacing: -0.6, lineHeight: 30 }}>
-            Know what to wear without opening the app
+            Coat or brolly, without opening the app
           </T>
           <T size={15} color={p.ink2} style={{ lineHeight: 21 }}>
-            Add Cardi to your Lock Screen and you’ll see your feels like, outfit and anything to bring every time you pick up your phone.
+            Add Cardi to your Lock Screen and you’ll see your feels like, whether you need a coat and when rain is due every time you pick up your phone.
           </T>
         </View>
 
@@ -84,7 +84,7 @@ export default function WidgetsScreen() {
         </View>
 
         <T size={13} color={p.ink3} style={{ lineHeight: 18 }}>
-          Can’t see Cardi in the list? Open the app once, then restart your phone. The widget updates itself through the day: your morning outfit, the trip home, then tomorrow.
+          Can’t see Cardi in the list? Open the app once, then restart your phone. The widget updates itself through the day: how it feels now, when rain or snow is due, then tomorrow.
         </T>
       </ScrollView>
 

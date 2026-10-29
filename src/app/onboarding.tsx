@@ -8,13 +8,14 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { Outfit, Waves } from '@/components/art';
 import { BIAS_OPTIONS, COVER_OPTIONS, Option, SkinPicker, TimeStepper } from '@/components/settings-parts';
 import { BigButton, Box, Row, Seg, T, tap, Wordmark } from '@/components/ui';
+import { t } from '@/engine/units';
 import { WorkDays } from '@/components/work-days';
 import { askToNotify } from '@/notify/morning';
 import { useApp } from '@/state/app-state';
 import { FONT } from '@/theme/skins';
 import { track } from '@/analytics';
 
-type StepId = 'welcome' | 'name' | 'cover' | 'wear' | 'hair' | 'day' | 'feel' | 'location' | 'morning' | 'look';
+type StepId = 'welcome' | 'name' | 'cover' | 'hair' | 'day' | 'feel' | 'location' | 'morning' | 'look';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -40,10 +41,10 @@ function WelcomeRing({ size }: { size: number }) {
           Feels like for you
         </T>
         <T w="black" size={52} style={{ letterSpacing: -2, lineHeight: 56 }}>
-          7°
+          {t(7)}
         </T>
         <T w="bold" size={12} color={p.ink3}>
-          Jacket day
+          Coat
         </T>
       </View>
     </View>
@@ -93,7 +94,7 @@ export default function Onboarding() {
   const [locState, setLocState] = useState<'idle' | 'granted' | 'denied'>('idle');
   const [notifyDenied, setNotifyDenied] = useState(false);
 
-  const steps: StepId[] = ['welcome', 'name', 'cover', ...(s.cover.outfit ? (['wear'] as StepId[]) : []), ...(s.cover.hair ? (['hair'] as StepId[]) : []), 'day', 'feel', 'location', 'morning', 'look'];
+  const steps: StepId[] = ['welcome', 'name', 'cover', ...(s.cover.hair ? (['hair'] as StepId[]) : []), 'day', 'feel', 'location', 'morning', 'look'];
   const idx = Math.min(i, steps.length - 1);
   const step = steps[idx];
   const last = idx === steps.length - 1;
@@ -117,7 +118,7 @@ export default function Onboarding() {
     tap();
     const ok = await askToNotify();
     setNotifyDenied(!ok);
-    update({ notify: ok, notifyAt: s.notify ? s.notifyAt : Math.max(5, Math.round((s.leave - 0.75) * 4) / 4) });
+    update({ notify: ok, rainAlerts: ok, notifyAt: s.notify ? s.notifyAt : Math.max(5, Math.round((s.leave - 0.75) * 4) / 4) });
   };
 
   const askLocation = async () => {
@@ -162,7 +163,7 @@ export default function Onboarding() {
             </View>
             <WelcomeRing size={Math.min(210, width * 0.55)} />
             <T w="black" size={Math.min(36, width * 0.09)} style={{ textAlign: 'center', letterSpacing: -1.4, lineHeight: Math.min(38, width * 0.095) }}>
-              Know what to wear before you leave the house.
+              Coat or brolly? Know before you leave the house.
             </T>
             <View style={{ gap: 16, paddingHorizontal: 4 }}>
               <Feature
@@ -206,16 +207,6 @@ export default function Onboarding() {
             {COVER_OPTIONS.map((o) => (
               <Option key={o.key} title={o.title} sub={o.sub} on={s.cover[o.key]} onPress={() => update({ cover: { ...s.cover, [o.key]: !s.cover[o.key] } })} />
             ))}
-          </>
-        )}
-
-        {step === 'wear' && (
-          <>
-            <Q>What do you usually wear?</Q>
-            <Why>So outfit tips use the right words for you.</Why>
-            <Option title="Trousers & jeans" sub="Jumpers, overshirts, coats" on={s.wear === 'trousers'} onPress={() => update({ wear: 'trousers' })} />
-            <Option title="Dresses & skirts" sub="Knits, tights, bare legs" on={s.wear === 'dresses'} onPress={() => update({ wear: 'dresses' })} />
-            <Option title="A mix of everything" on={s.wear === 'mix'} onPress={() => update({ wear: 'mix' })} />
           </>
         )}
 
@@ -289,7 +280,7 @@ export default function Onboarding() {
         {step === 'morning' && (
           <>
             <Q>Want a heads-up each morning?</Q>
-            <Why>One line at a time you pick, like “Feels 9° · Jacket day. Brolly for the way home.”</Why>
+            <Why>{`One line at a time you pick, like “Feels ${t(9)} · Light jacket. Brolly for the way home.”`}</Why>
             <Option title="Yes please" sub="You can change the time any time in Me" on={s.notify} onPress={askNotify} />
             {s.notify && (
               <Box>

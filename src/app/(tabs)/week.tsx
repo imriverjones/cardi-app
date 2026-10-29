@@ -7,6 +7,7 @@ import { toneColors } from '@/components/day-plan';
 import { Box, T, tap } from '@/components/ui';
 import { useNow } from '@/components/use-now';
 import { localDayKey, week } from '@/engine/advice';
+import { t } from '@/engine/units';
 import { useApp } from '@/state/app-state';
 import { alerts } from '@/widgets/sync';
 import { track } from '@/analytics';
@@ -24,7 +25,7 @@ export default function Week() {
         Your week
       </T>
       <T color={p.ink3} style={{ marginTop: 4, marginBottom: 16 }}>
-        What to wear each day{forecast ? ` in ${forecast.place}` : ''}. Tap a day for the full plan.
+        Coat and brolly, each day{forecast ? ` in ${forecast.place}` : ''}. Tap a day for the full plan.
       </T>
       <Box style={{ overflow: 'hidden' }}>
         {days.map((d, i) => {
@@ -53,7 +54,7 @@ export default function Week() {
                 borderBottomColor: p.line,
               })}>
               <View style={{ width: 44, alignItems: 'flex-start' }}>
-                <T w="black" size={22} style={{ letterSpacing: -0.5 }}>{`${d.mine}°`}</T>
+                <T w="black" size={22} style={{ letterSpacing: -0.5 }}>{t(d.mine)}</T>
               </View>
               <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
                 <T w="bold" size={13} color={p.ink3}>

@@ -9,6 +9,7 @@ import { useNow } from '@/components/use-now';
 import { WeatherCredit } from '@/components/weather-credit';
 import { LockPreview } from '@/components/widget-preview';
 import { forDay, localDayKey, localHourOf } from '@/engine/advice';
+import { t } from '@/engine/units';
 import { useApp } from '@/state/app-state';
 import { track } from '@/analytics';
 
@@ -16,6 +17,7 @@ export default function Today() {
   const { advice: a, settings: s, palette: p, status, error, refresh, feedback, lastFeedback, forecast, update } = useApp();
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
+  const [scrubbing, setScrubbing] = useState(false);
   const now = useNow();
 
   const onRefresh = async () => {
@@ -56,15 +58,16 @@ export default function Today() {
 
   const fbText =
     lastFeedback === 'cold'
-      ? `Got it. Your feels like is now ${a.mine}°, and I'll dress you warmer.`
+      ? `Got it. Your feels like is now ${t(a.mine)}, and I'll allow for you running cold.`
       : lastFeedback === 'warm'
-        ? `Got it. Your feels like is now ${a.mine}°, and I'll suggest lighter layers.`
+        ? `Got it. Your feels like is now ${t(a.mine)}, and I'll allow for you running warm.`
         : lastFeedback === 'ok'
           ? "Lovely. I'll keep it just like this."
           : 'Each answer tunes your feels like.';
 
   return (
     <ScrollView
+      scrollEnabled={!scrubbing}
       style={{ flex: 1, backgroundColor: p.bg2 }}
       contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: insets.bottom + 110, paddingHorizontal: 20, gap: 18 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={p.accent} />}>
@@ -92,7 +95,7 @@ export default function Today() {
         </Pressable>
       </View>
 
-      <DayPlan a={a} s={s} p={p} nowH={nowH} />
+      <DayPlan a={a} s={s} p={p} nowH={nowH} onScrubbing={setScrubbing} />
 
       {showWidgetCard && (
         <View>

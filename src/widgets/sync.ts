@@ -2,6 +2,7 @@ import type { SFSymbol } from 'sf-symbols-typescript';
 
 import { advise, fmtClock, fmtHour, forDay, localDayKey, localHourOf, timeAt, type Advice } from '@/engine/advice';
 import type { Forecast, Settings } from '@/engine/types';
+import { deg, setUnits, t as tStr, wind } from '@/engine/units';
 
 import type { CardiWidgetProps } from './CardiWidget';
 
@@ -25,64 +26,78 @@ export function alerts(a: Advice, settings: Settings, mode: CardiWidgetProps['mo
   const s = forDay(settings, a.dayKey);
   const out: Alert[] = [];
   const rainAt = fmtHour(a.rainStart ?? s.back);
+  // Rain or snow in the next few hours comes first: it's the thing you can still do something about.
+  const nw = a.nextWet;
+  if (nw)
+    out.push({
+      symbol: nw.snow ? 'snowflake' : 'cloud.rain.fill',
+      tone: 'rain',
+      text: nw.now ? (nw.snow ? 'Snowing now' : 'Raining now') : `${nw.snow ? 'Snow' : 'Rain'} from ${fmtHour(nw.h)}`,
+      sub: `${nw.pct}% chance${nw.snow ? '. Boots, not trainers' : ''}`,
+    });
+  // Brolly, or boots when it's snow.
+  const kit = (snow: boolean) => (snow ? 'Boots' : 'Brolly');
+  const wetSym = (snow: boolean): SFSymbol => (snow ? 'snowflake' : 'umbrella.fill');
   if (a.off) {
     // A day off: no trips to talk about, just whether you'll want a brolly or a layer while you're out.
-    if (a.brolly) out.push({ symbol: 'umbrella.fill', tone: 'rain', text: `Brolly · rain from ${rainAt}`, sub: `${a.rOut}% chance if you're out and about` });
-    if (a.warmUp) out.push({ symbol: 'arrow.up.right', tone: 'layer', text: `Warms to ${a.peak}° by ${fmtHour(a.peakHour)}`, sub: 'Wear layers you can take off' });
-    else if (a.leaveFeels - a.homeFeels >= 4)
-      out.push({ symbol: 'arrow.down.right', tone: 'layer', text: `Cools to ${a.homeFeels}° by ${fmtClock(s.back)}`, sub: "Bring a layer if you're out late" });
+    if (a.brolly && !nw)
+      out.push({ symbol: wetSym(a.snowy), tone: 'rain', text: `${kit(a.snowy)} · ${a.snowy ? 'snow' : 'rain'} from ${rainAt}`, sub: `${a.rOut}% chance if you're out and about` });
+    if (a.warmUp) out.push({ symbol: 'arrow.up.right', tone: 'layer', text: `Warms to ${tStr(a.peak)} by ${fmtHour(a.peakHour)}`, sub: "You won't need the coat later" });
+    else if (a.cools)
+      out.push({ symbol: 'arrow.down.right', tone: 'layer', text: `Cools to ${tStr(a.homeFeels)} by ${fmtClock(s.back)}`, sub: "Take a coat if you're out late" });
     if (s.cover.skin && a.uv >= 3)
       out.push({ symbol: 'sun.max.fill', tone: 'sun', text: `SPF · UV ${a.uv} at ${fmtHour(a.uvPeak)}`, sub: a.uv >= 6 ? 'SPF 30+ and sunglasses' : 'Stronger than it feels on a cool day' });
     if (s.cover.hair && s.hair !== 'short' && a.frizz >= 4) out.push({ symbol: 'humidity.fill', tone: 'hair', text: cap(a.hair.short), sub: a.hair.tip });
   } else if (mode === 'home') {
     out.push(
       a.rHome >= 40
-        ? { symbol: 'umbrella.fill', tone: 'rain', text: 'Brolly for the way home', sub: `${a.rHome}% chance of rain around ${fmtClock(s.back)}` }
+        ? { symbol: wetSym(a.snowHome), tone: 'rain', text: `${kit(a.snowHome)} for the way home`, sub: `${a.rHome}% chance of ${a.snowHome ? 'snow' : 'rain'} around ${fmtClock(s.back)}` }
         : { symbol: 'checkmark.circle.fill', tone: 'green', text: 'Dry way home', sub: 'No brolly needed' }
     );
-    if (a.leaveFeels - a.homeFeels >= 4)
-      out.push({ symbol: 'arrow.down.right', tone: 'layer', text: `Cools to ${a.homeFeels}° by ${fmtClock(s.back)}`, sub: 'Put the layer back on' });
+    if (a.cools)
+      out.push({ symbol: 'arrow.down.right', tone: 'layer', text: `Cools to ${tStr(a.homeFeels)} by ${fmtClock(s.back)}`, sub: 'Coat back on for the way home' });
   } else {
-    // Rain, said in terms of your trips: in, home, both, or only while you're out and about.
+    // Rain or snow, said in terms of your trips: in, home, both, or only while you're out and about.
+    const snow = a.snowOut || a.snowHome;
     if (a.rOut >= 40 && a.rHome >= 40)
-      out.push({ symbol: 'umbrella.fill', tone: 'rain', text: 'Brolly both ways', sub: `Rain on the way in and home, from ${rainAt}` });
+      out.push({ symbol: wetSym(snow), tone: 'rain', text: `${kit(snow)} both ways`, sub: `${snow ? 'Snow' : 'Rain'} on the way in and home, from ${rainAt}` });
     else if (a.rHome >= 40)
-      out.push({ symbol: 'umbrella.fill', tone: 'rain', text: 'Brolly for the way home', sub: `Dry on the way in, rain from ${rainAt}` });
+      out.push({ symbol: wetSym(a.snowHome), tone: 'rain', text: `${kit(a.snowHome)} for the way home`, sub: `Dry on the way in, ${a.snowHome ? 'snow' : 'rain'} from ${rainAt}` });
     else if (a.rOut >= 40)
-      out.push({ symbol: 'umbrella.fill', tone: 'rain', text: 'Brolly for the way in', sub: `Rain around ${fmtClock(s.leave)}, dry later` });
-    else if (a.midRain)
+      out.push({ symbol: wetSym(a.snowOut), tone: 'rain', text: `${kit(a.snowOut)} for the way in`, sub: `${a.snowOut ? 'Snow' : 'Rain'} around ${fmtClock(s.leave)}, dry later` });
+    else if (a.midRain && !nw)
       out.push({
-        symbol: 'cloud.rain.fill',
+        symbol: a.snowy ? 'snowflake' : 'cloud.rain.fill',
         tone: 'rain',
-        text: `Showers ${fmtHour(a.midRain[0])}–${fmtHour(a.midRain[1])}`,
+        text: `${a.snowy ? 'Snow' : 'Showers'} ${fmtHour(a.midRain[0])}–${fmtHour(a.midRain[1])}`,
         sub: 'Dry on your trips. A brolly in your bag for lunch',
       });
     // How the day changes, so a cold morning doesn't leave you too warm by 2pm (and the reverse).
-    if (a.warmUp) out.push({ symbol: 'arrow.up.right', tone: 'layer', text: `Warms to ${a.peak}° by ${fmtHour(a.peakHour)}`, sub: 'Wear layers you can take off' });
-    else if (a.leaveFeels - a.homeFeels >= 4)
-      out.push({ symbol: 'arrow.down.right', tone: 'layer', text: `Cools to ${a.homeFeels}° by ${fmtClock(s.back)}`, sub: 'Bring a layer for the way home' });
+    if (a.warmUp) out.push({ symbol: 'arrow.up.right', tone: 'layer', text: `Warms to ${tStr(a.peak)} by ${fmtHour(a.peakHour)}`, sub: "You won't need the coat later" });
+    else if (a.cools)
+      out.push({ symbol: 'arrow.down.right', tone: 'layer', text: `Cools to ${tStr(a.homeFeels)} by ${fmtClock(s.back)}`, sub: 'Bring the coat for the way home' });
     if (s.cover.skin && a.uv >= 3)
       out.push({ symbol: 'sun.max.fill', tone: 'sun', text: `SPF · UV ${a.uv} at ${fmtHour(a.uvPeak)}`, sub: a.uv >= 6 ? 'SPF 30+ and sunglasses' : 'Stronger than it feels on a cool day' });
     if (s.cover.hair && s.hair !== 'short' && a.frizz >= 4) out.push({ symbol: 'humidity.fill', tone: 'hair', text: cap(a.hair.short), sub: a.hair.tip });
   }
-  if (a.windy) out.push({ symbol: 'wind', tone: 'other', text: `Windy · ${a.maxWind} km/h`, sub: 'Zip up, and hold on to your hat' });
+  if (a.windy) out.push({ symbol: 'wind', tone: 'other', text: `Windy · ${wind(a.maxWind)}`, sub: 'Zip up, and hold on to your hat' });
   if (s.cover.commute) out.push({ symbol: MOVE_SYMBOL[s.move], tone: 'other', text: a.commute.s, sub: a.commute.m });
   if (s.cover.washing) out.push({ symbol: 'hanger', tone: 'green', text: a.washing.s, sub: a.washing.m });
   if (!out.length)
-    out.push({ symbol: 'checkmark.circle.fill', tone: 'green', text: a.rOut < 40 && a.rHome < 40 ? 'Dry · nothing to carry' : 'Nothing to carry', sub: 'Just the outfit today' });
+    out.push({ symbol: 'checkmark.circle.fill', tone: 'green', text: a.rOut < 40 && a.rHome < 40 ? 'Dry · nothing to carry' : 'Nothing to carry', sub: 'Nothing else to think about today' });
   return out.slice(0, 3);
 }
 
 function tiles(a: Advice, s: Settings): CardiWidgetProps['tiles'] {
   const t: CardiWidgetProps['tiles'] = [
-    { tone: 'other', title: `${fmtClock(s.leave)} · out`, value: `${a.leaveFeels}° · ${a.rOut >= 40 ? 'rain' : 'dry'}` },
-    { tone: 'rain', title: `${fmtClock(s.back)} · home`, value: `${a.homeFeels}° · ${a.rHome >= 40 ? `rain ${a.rHome}%` : 'dry'}` },
+    { tone: 'other', title: `${fmtClock(s.leave)} · out`, value: `${tStr(a.leaveFeels)} · ${a.rOut >= 40 ? 'rain' : 'dry'}` },
+    { tone: 'rain', title: `${fmtClock(s.back)} · home`, value: `${tStr(a.homeFeels)} · ${a.rHome >= 40 ? `rain ${a.rHome}%` : 'dry'}` },
   ];
   if (s.cover.hair && s.hair !== 'short') t.push({ tone: 'hair', title: 'Hair', value: a.hair.label });
   if (s.cover.skin) t.push({ tone: 'sun', title: `UV ${a.uv}`, value: a.uv <= 2 ? 'No SPF needed' : a.uv <= 5 ? 'SPF at lunch' : 'SPF and shades' });
   if (s.cover.washing) t.push({ tone: 'green', title: 'Washing', value: a.washing.s });
   if (s.cover.commute) t.push({ tone: 'layer', title: 'Commute', value: a.commute.s });
-  while (t.length < 4) t.push({ tone: 'layer', title: 'Range', value: `${a.lo}° to ${a.hi}°` });
+  while (t.length < 4) t.push({ tone: 'layer', title: 'Range', value: `${tStr(a.lo)} to ${tStr(a.hi)}` });
   return t.slice(0, 4);
 }
 
@@ -99,7 +114,7 @@ function entry(a: Advice, settings: Settings, mode: CardiWidgetProps['mode']): C
     mode === 'home'
       ? a.brolly
         ? 'Brolly out.'
-        : `Feels ${a.homeFeels}°.`
+        : `Feels ${tStr(a.homeFeels)}.`
       : a.brolly
         ? 'Brolly later.'
         : s.cover.hair && a.frizz >= 7 && a.curly
@@ -112,22 +127,37 @@ function entry(a: Advice, settings: Settings, mode: CardiWidgetProps['mode']): C
   const al = alerts(a, s, mode);
   // Above the clock: "Feels 9–17° · Jacket · Brolly home"
   const [lo, hi] = today ? [a.spanLo, a.spanHi] : [a.mine, a.peak];
-  const range = hi - lo >= 3 ? `${lo}–${hi}°` : `${feels}°`;
+  const range = hi - lo >= 3 ? `${deg(lo)}–${deg(hi)}°` : tStr(feels);
   const rain = mode === 'home' ? a.rHome >= 40 : a.brolly;
   const rainWord = a.rOut >= 40 && a.rHome >= 40 ? 'Brolly' : a.rHome >= 40 ? 'Brolly home' : 'Brolly in';
   const showers = mode !== 'home' && !!a.midRain;
-  const inline = `Feels ${range} · ${a.step.short}` + (rain ? ` · ${rainWord}` : showers ? ' · Showers' : '');
-  const inlineSymbol: SFSymbol = rain ? 'umbrella.fill' : showers ? 'cloud.rain.fill' : OUTFIT_SYMBOL[a.step.art];
+  const wet = a.nextWet;
+  const snowTrip = mode === 'home' ? a.snowHome : a.snowOut || a.snowHome;
+  const inline =
+    `Feels ${range} · ${a.step.short}` +
+    (wet ? ` · ${wet.snow ? 'Snow' : 'Rain'} ${wet.now ? 'now' : fmtHour(wet.h)}` : rain ? ` · ${snowTrip ? 'Snow' : rainWord}` : showers ? ' · Showers' : '');
+  const inlineSymbol: SFSymbol = wet
+    ? wet.snow
+      ? 'snowflake'
+      : 'cloud.rain.fill'
+    : rain
+      ? snowTrip
+        ? 'snowflake'
+        : 'umbrella.fill'
+      : showers
+        ? 'cloud.rain.fill'
+        : OUTFIT_SYMBOL[a.step.art];
   return {
     skin: s.skin,
     mode,
     label,
-    feels,
+    // The widget shows numbers as-is, so they go across already in °F if that's what you use.
+    feels: deg(feels),
     range,
-    actual: today ? a.nowTemp : a.actual,
+    actual: deg(today ? a.nowTemp : a.actual),
     when: today ? 'now' : 'way out',
-    lo: a.lo,
-    hi: a.hi,
+    lo: deg(a.lo),
+    hi: deg(a.hi),
     verdict,
     headline,
     headline2,
@@ -179,6 +209,7 @@ export function buildTimeline(f: Forecast, s: Settings, now = Date.now()) {
 /** Push the latest advice to the Home and Lock Screen widgets. Safe to call anywhere. */
 export async function syncWidgets(f: Forecast, s: Settings) {
   try {
+    setUnits(s);
     const { default: CardiWidget } = await import('./CardiWidget');
     const timeline = buildTimeline(f, s);
     if (timeline.length) CardiWidget.updateTimeline(timeline);

@@ -38,6 +38,11 @@ export type Settings = {
   notifyAt: number;
   /** Days you commute, 0 = Sunday … 6 = Saturday. Other days are planned as a day off. */
   workDays: number[];
+  /** °C or °F, and km/h or mph. 'auto' follows the phone's region. */
+  temp: 'auto' | 'c' | 'f';
+  speed: 'auto' | 'kmh' | 'mph';
+  /** A heads-up 30 minutes before a trip if rain or snow is on the way */
+  rainAlerts: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -57,6 +62,9 @@ export const DEFAULT_SETTINGS: Settings = {
   notify: false,
   notifyAt: 7.25,
   workDays: [1, 2, 3, 4, 5],
+  temp: 'auto',
+  speed: 'auto',
+  rainAlerts: true,
 };
 
 /** One forecast hour. `t` is a unix timestamp in ms. */

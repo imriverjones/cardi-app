@@ -2,7 +2,10 @@ import * as Notifications from 'expo-notifications';
 
 import { advise, isWorkDay, localDayKey, timeAt, type Advice } from '@/engine/advice';
 import type { Forecast, Settings } from '@/engine/types';
+import { setUnits, t, tRange } from '@/engine/units';
 import { alerts } from '@/widgets/sync';
+
+import { wetNudges } from './wet';
 
 /** How many mornings ahead to schedule. The forecast covers 8 days; the background refresh keeps them up to date. */
 const DAYS_AHEAD = 7;
@@ -18,7 +21,7 @@ Notifications.setNotificationHandler({
 
 /** The morning message: "Feels 9–17° · Jacket day" and the two things worth acting on, same as the widget. */
 export function morningMessage(a: Advice, s: Settings) {
-  const range = a.peak - a.mine >= 4 ? `${a.mine}–${a.peak}°` : `${a.mine}°`;
+  const range = a.peak - a.mine >= 4 ? tRange(a.mine, a.peak) : t(a.mine);
   const lines = alerts(a, s, 'morning')
     .slice(0, 2)
     .map((x) => `${x.text}.`);
@@ -39,11 +42,20 @@ export async function askToNotify() {
 
 /** Replace the scheduled mornings with fresh ones from this forecast. Safe to call anywhere. */
 export async function scheduleMornings(f: Forecast, s: Settings, now = Date.now()) {
+  setUnits(s);
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
-    if (!s.notify || !s.onboarded) return;
+    if (!s.onboarded || (!s.notify && !s.rainAlerts)) return;
     const perm = await Notifications.getPermissionsAsync();
     if (!perm.granted) return;
+    // Rain or snow on the way: 30 minutes before, if it matters to you.
+    if (s.rainAlerts)
+      for (const n of wetNudges(f, s, now))
+        await Notifications.scheduleNotificationAsync({
+          content: { title: n.title, body: n.body, data: { url: 'cardi://?from=notification' } },
+          trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(n.at) },
+        });
+    if (!s.notify) return;
     const today = localDayKey(f, now);
     for (let d = 0; d < DAYS_AHEAD; d++) {
       // No alarm-clock heads-up on a day off: it waits until 9am at the earliest.
