@@ -17,6 +17,25 @@ type Alert = CardiWidgetProps['alerts'][number];
 
 const MOVE_SYMBOL: Record<Settings['move'], SFSymbol> = { walk: 'figure.walk', cycle: 'bicycle', transit: 'tram.fill' };
 const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+const MOVE_WORD: Record<Settings['move'], string> = { walk: 'Walk', cycle: 'Cycle', transit: 'Train' };
+
+/**
+ * The recommended way to get about: "Walk in, train home", with the reasons.
+ * Null on days off, or when commute tips are switched off. `swap` means the weather has changed your plan.
+ */
+export function commuteTip(a: Advice): { text: string; sub: string; mode: Settings['move']; swap: boolean } | null {
+  const l = a.legs;
+  if (!l) return null;
+  const { in: i, home: h } = l;
+  if (!i) return { text: `${MOVE_WORD[h.mode]} home`, sub: cap(h.why), mode: h.mode, swap: h.swap };
+  const same = i.mode === h.mode;
+  return {
+    text: same ? `${MOVE_WORD[i.mode]} both ways` : `${MOVE_WORD[i.mode]} in, ${MOVE_WORD[h.mode].toLowerCase()} home`,
+    sub: i.why === h.why ? `${cap(i.why)} both ways` : `${cap(i.why)} in. ${cap(h.why)} home.`,
+    mode: i.mode,
+    swap: i.swap || h.swap,
+  };
+}
 
 /**
  * The things worth acting on, most important first. The Lock Screen shows the top two,
@@ -81,7 +100,13 @@ export function alerts(a: Advice, settings: Settings, mode: CardiWidgetProps['mo
     if (s.cover.hair && s.hair !== 'short' && a.frizz >= 4) out.push({ symbol: 'humidity.fill', tone: 'hair', text: cap(a.hair.short), sub: a.hair.tip });
   }
   if (a.windy) out.push({ symbol: 'wind', tone: 'other', text: `Windy · ${wind(a.maxWind)}`, sub: 'Zip up, and hold on to your hat' });
-  if (s.cover.commute) out.push({ symbol: MOVE_SYMBOL[s.move], tone: 'other', text: a.commute.s, sub: a.commute.m });
+  const tip = s.cover.commute ? commuteTip(a) : null;
+  if (tip) {
+    // When the weather changes your plan ("train home, not walk") it's the thing to see first.
+    const row: Alert = { symbol: MOVE_SYMBOL[tip.mode], tone: 'other', text: tip.text, sub: tip.sub };
+    if (tip.swap) out.unshift(row);
+    else out.push(row);
+  } else if (s.cover.commute) out.push({ symbol: MOVE_SYMBOL[s.move], tone: 'other', text: a.commute.s, sub: a.commute.m });
   if (s.cover.washing) out.push({ symbol: 'hanger', tone: 'green', text: a.washing.s, sub: a.washing.m });
   if (!out.length)
     out.push({ symbol: 'checkmark.circle.fill', tone: 'green', text: a.rOut < 40 && a.rHome < 40 ? 'Dry · nothing to carry' : 'Nothing to carry', sub: 'Nothing else to think about today' });
@@ -134,7 +159,7 @@ function entry(a: Advice, settings: Settings, mode: CardiWidgetProps['mode']): C
   const wet = a.nextWet;
   const snowTrip = mode === 'home' ? a.snowHome : a.snowOut || a.snowHome;
   const inline =
-    `Feels ${range} · ${a.step.short}` +
+    `${mode === 'tomorrow' ? 'Tomorrow' : 'Feels'} ${range} · ${a.step.short}` +
     (wet ? ` · ${wet.snow ? 'Snow' : 'Rain'} ${wet.now ? 'now' : fmtHour(wet.h)}` : rain ? ` · ${snowTrip ? 'Snow' : rainWord}` : showers ? ' · Showers' : '');
   const inlineSymbol: SFSymbol = wet
     ? wet.snow

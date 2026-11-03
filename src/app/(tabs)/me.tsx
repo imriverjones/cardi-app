@@ -3,6 +3,7 @@ import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BIAS_OPTIONS, COVER_OPTIONS, SkinPicker, TimeStepper } from '@/components/settings-parts';
+import { CommutePlan } from '@/components/commute-plan';
 import { BigButton, Box, Row, Seg, T, tap } from '@/components/ui';
 import { WorkDays } from '@/components/work-days';
 import { askToNotify } from '@/notify/morning';
@@ -98,10 +99,6 @@ export default function Me() {
           <Seg value={s.hair} onChange={(hair) => update({ hair })} options={[['curly', 'Curly'], ['wavy', 'Wavy'], ['straight', 'Straight'], ['short', 'Short']]} />
         </Row>
         <Row>
-          <T w="semibold">You get about by</T>
-          <Seg value={s.move} onChange={(move) => update({ move })} options={[['walk', 'Walking'], ['cycle', 'Cycling'], ['transit', 'Bus or train']]} />
-        </Row>
-        <Row>
           <T w="semibold">Temperature</T>
           <Seg value={units.temp} onChange={(temp) => update({ temp })} options={[['c', '°C'], ['f', '°F']]} />
         </Row>
@@ -110,6 +107,36 @@ export default function Me() {
           <Seg value={units.speed} onChange={(speed) => update({ speed })} options={[['kmh', 'km/h'], ['mph', 'mph']]} />
         </Row>
       </Box>
+
+      {s.cover.commute && (
+        <>
+          <T w="heavy" size={17} style={{ marginTop: 14 }}>
+            Getting to work
+          </T>
+          <CommutePlan />
+          <Box>
+            <Row last>
+              <T w="semibold">Night-before tip</T>
+              <Seg
+                value={s.commuteTip ? 'on' : 'off'}
+                options={[
+                  ['on', 'On'],
+                  ['off', 'Off'],
+                ]}
+                onChange={async (v) => {
+                  const on = v === 'on';
+                  track('commute_tip_changed', { on });
+                  if (on && !(await askToNotify())) return;
+                  update({ commuteTip: on });
+                }}
+              />
+            </Row>
+          </Box>
+          <T size={13} color={p.ink3} style={{ paddingHorizontal: 6 }}>
+            The evening before a work day: “Walk in, train home”, with the weather behind it.
+          </T>
+        </>
+      )}
 
       <T w="heavy" size={17} style={{ marginTop: 14 }}>
         You usually feel
@@ -183,10 +210,24 @@ export default function Me() {
 
       <Box style={{ marginTop: 14 }}>
         <Pressable accessibilityRole="button" onPress={() => router.push('/widgets')}>
-          <Row last>
+          <Row>
             <T w="semibold">Lock Screen & Home Screen widgets</T>
             <T w="bold" color={p.accentText}>
               How to add ›
+            </T>
+          </Row>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            tap();
+            track('suggest_opened');
+            router.push('/suggest');
+          }}>
+          <Row last>
+            <T w="semibold">Suggest a feature</T>
+            <T w="bold" color={p.accentText}>
+              Tell us ›
             </T>
           </Row>
         </Pressable>

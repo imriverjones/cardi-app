@@ -3,6 +3,9 @@ export type Wear = 'trousers' | 'dresses' | 'mix';
 export type Move = 'walk' | 'cycle' | 'transit';
 export type Skin = 'blush' | 'stone' | 'night';
 
+/** How you get about each way: [when it's nice, when it's wet or cold]. */
+export type Legs = { in: [Move, Move]; home: [Move, Move] };
+
 export type Cover = {
   outfit: boolean;
   hair: boolean;
@@ -45,7 +48,14 @@ export type Settings = {
   rainAlerts: boolean;
   /** From this hour in the evening the widget shows tomorrow instead of today (never before you're home) */
   tomorrowAt: number;
+  /** How you get to work and back, by weather. Missing means your usual way, whatever the weather. */
+  legs?: Legs;
+  /** The evening before: tomorrow's recommended commute, as a notification */
+  commuteTip: boolean;
 };
+
+/** Your commute modes, filled in from your usual way if you've never set them. */
+export const resolveLegs = (s: Pick<Settings, 'move' | 'legs'>): Legs => s.legs ?? { in: [s.move, s.move], home: [s.move, s.move] };
 
 export const DEFAULT_SETTINGS: Settings = {
   name: '',
@@ -68,6 +78,7 @@ export const DEFAULT_SETTINGS: Settings = {
   speed: 'auto',
   rainAlerts: true,
   tomorrowAt: 20,
+  commuteTip: true,
 };
 
 /** One forecast hour. `t` is a unix timestamp in ms. */

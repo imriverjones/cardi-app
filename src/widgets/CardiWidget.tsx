@@ -123,7 +123,7 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
         />
         <VStack spacing={-1}>
           <Text modifiers={[font({ size: 20, weight: 'bold', design: 'rounded' }), minimumScaleFactor(0.6), lineLimit(1)]}>{`${props.feels}°`}</Text>
-          <Text modifiers={[font({ size: 10, weight: 'semibold' })]}>feels</Text>
+          <Text modifiers={[font({ size: 10, weight: 'semibold' }), minimumScaleFactor(0.6), lineLimit(1)]}>{props.mode === 'tomorrow' ? 'tomorrow' : 'feels'}</Text>
         </VStack>
       </ZStack>
     );
@@ -132,10 +132,12 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
     // Lock Screen box: the verdict, then the two things worth acting on.
     return (
       <VStack alignment="leading" spacing={1} modifiers={[frame({ maxWidth: Infinity, alignment: 'leading' }), link]}>
-        <Text modifiers={[font({ size: 16, weight: 'heavy', design: 'rounded' }), lineLimit(1), minimumScaleFactor(0.75)]}>{`${props.verdict} · ${props.range}`}</Text>
+        <Text modifiers={[font({ size: 16, weight: 'heavy', design: 'rounded' }), lineLimit(1), minimumScaleFactor(0.75)]}>
+          {props.mode === 'tomorrow' ? `Tomorrow · ${props.verdict}` : `${props.verdict} · ${props.range}`}
+        </Text>
         {props.alerts.slice(0, 2).map((al, i) => (
           <Text key={i} modifiers={[font({ size: 13, weight: 'semibold' }), lineLimit(1), minimumScaleFactor(0.8)]}>
-            {al.text}
+            {props.mode === 'tomorrow' && i === 0 ? `${props.range} · ${al.text}` : al.text}
           </Text>
         ))}
       </VStack>

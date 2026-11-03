@@ -1,4 +1,4 @@
-import type { Forecast, Hour, Settings } from './types';
+import { resolveLegs, type Forecast, type Hour, type Move, type Settings } from './types';
 import { t as tStr, wind as windStr } from './units';
 
 /* ---------- time helpers (all in the forecast location's local time) ---------- */
@@ -131,6 +131,17 @@ export function forDay(s: Settings, dayKey: number): Settings {
 
 export type Line = { s: string; m: string };
 
+/** The way to travel for one trip, and why. */
+export type LegRec = {
+  mode: Move;
+  /** Weather that calls for your wet-or-cold choice: likely rain or snow, near freezing, or very windy */
+  foul: boolean;
+  /** Different from what you'd do on a nice day */
+  swap: boolean;
+  /** "dry, 9°", "rain 70%", "cold, 1°", "windy 38 km/h" */
+  why: string;
+};
+
 export type Advice = {
   place: string;
   dayKey: number;
@@ -186,6 +197,8 @@ export type Advice = {
   spanHi: number;
   /** Whether your trip out is already behind you */
   outDone: boolean;
+  /** Walk, cycle or train for each trip. The way in is null once you've left. Null on days off or with commute switched off. */
+  legs: { in: LegRec | null; home: LegRec } | null;
   /** It gets at least 4° colder between now (or when you leave) and the trip home */
   cools: boolean;
   /** A day off: no commute, just the hours you might be out and about */
@@ -306,6 +319,22 @@ export function advise(f: Forecast, settings: Settings, dayKey = localDayKey(f, 
     };
   }
 
+  // Which way to go on each trip: your nice-weather choice, or your wet-or-cold one when it turns.
+  const L = resolveLegs(s);
+  const recFor = (leg: 'in' | 'home'): LegRec => {
+    const hours = leg === 'in' ? legOut : legHome;
+    const wet = leg === 'in' ? rOut : rHome;
+    const snow = leg === 'in' ? snowOut : snowHome;
+    const feel = leg === 'in' ? leaveFeels : homeFeels;
+    const gust = Math.max(...hours.map((h) => d[h].wind));
+    const foul = wet >= 50 || feel <= 2 || gust >= 35;
+    const [fair, bad] = L[leg];
+    const mode = foul ? bad : fair;
+    const why = wet >= 50 ? `${snow ? 'snow' : 'rain'} ${wet}%` : feel <= 2 ? `cold, ${tStr(feel)}` : gust >= 35 ? `windy ${windStr(gust)}` : `dry, ${tStr(feel)}`;
+    return { mode, foul, swap: mode !== fair, why };
+  };
+  const legs: Advice['legs'] = off || !s.cover.commute ? null : { in: outDone ? null : recFor('in'), home: recFor('home') };
+
   const verb = MOVE[s.move].verb;
   const commute: Line = {
     s: rHome >= 40 && rOut < 40 ? `Dry ${verb} in, wet ${verb} home` : rOut >= 40 ? `Wet ${verb} in` : 'Dry both ways',
@@ -354,6 +383,7 @@ export function advise(f: Forecast, settings: Settings, dayKey = localDayKey(f, 
   const nowFeels = Math.round(nowHour.feels - s.bias * 1.5);
   const cools = (outDone ? nowFeels : leaveFeels) - homeFeels >= 4;
   return {
+    legs,
     cools,
     nowFeels,
     nowTemp: Math.round(nowHour.temp),

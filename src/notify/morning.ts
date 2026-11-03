@@ -5,6 +5,7 @@ import type { Forecast, Settings } from '@/engine/types';
 import { setUnits, t, tRange } from '@/engine/units';
 import { alerts } from '@/widgets/sync';
 
+import { commuteNudges } from './commute';
 import { wetNudges } from './wet';
 
 /** How many mornings ahead to schedule. The forecast covers 8 days; the background refresh keeps them up to date. */
@@ -45,12 +46,19 @@ export async function scheduleMornings(f: Forecast, s: Settings, now = Date.now(
   setUnits(s);
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
-    if (!s.onboarded || (!s.notify && !s.rainAlerts)) return;
+    if (!s.onboarded || (!s.notify && !s.rainAlerts && !s.commuteTip)) return;
     const perm = await Notifications.getPermissionsAsync();
     if (!perm.granted) return;
     // Rain or snow on the way: 30 minutes before, if it matters to you.
     if (s.rainAlerts)
       for (const n of wetNudges(f, s, now))
+        await Notifications.scheduleNotificationAsync({
+          content: { title: n.title, body: n.body, data: { url: 'cardi://?from=notification' } },
+          trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(n.at) },
+        });
+    // The evening before: how to get to work tomorrow, given the weather.
+    if (s.commuteTip)
+      for (const n of commuteNudges(f, s, now))
         await Notifications.scheduleNotificationAsync({
           content: { title: n.title, body: n.body, data: { url: 'cardi://?from=notification' } },
           trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(n.at) },

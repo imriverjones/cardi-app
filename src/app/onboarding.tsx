@@ -6,8 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Outfit, Waves } from '@/components/art';
+import { CommutePlan } from '@/components/commute-plan';
 import { BIAS_OPTIONS, COVER_OPTIONS, Option, SkinPicker, TimeStepper } from '@/components/settings-parts';
-import { BigButton, Box, Row, Seg, T, tap, Wordmark } from '@/components/ui';
+import { BigButton, Box, Row, T, tap, Wordmark } from '@/components/ui';
 import { t } from '@/engine/units';
 import { WorkDays } from '@/components/work-days';
 import { askToNotify } from '@/notify/morning';
@@ -118,7 +119,7 @@ export default function Onboarding() {
     tap();
     const ok = await askToNotify();
     setNotifyDenied(!ok);
-    update({ notify: ok, rainAlerts: ok, notifyAt: s.notify ? s.notifyAt : Math.max(5, Math.round((s.leave - 0.75) * 4) / 4) });
+    update({ notify: ok, rainAlerts: ok, commuteTip: ok, notifyAt: s.notify ? s.notifyAt : Math.max(5, Math.round((s.leave - 0.75) * 4) / 4) });
   };
 
   const askLocation = async () => {
@@ -247,7 +248,7 @@ export default function Onboarding() {
                 <T w="heavy" style={{ marginTop: 6 }}>
                   How do you get about?
                 </T>
-                <Seg value={s.move} onChange={(move) => update({ move })} options={[['walk', 'Walking'], ['cycle', 'Cycling'], ['transit', 'Bus or train']]} />
+                <CommutePlan />
               </>
             )}
           </>
