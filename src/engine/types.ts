@@ -52,6 +52,8 @@ export type Settings = {
   legs?: Legs;
   /** The evening before: tomorrow's recommended commute, as a notification */
   commuteTip: boolean;
+  /** One-off changes to a single day (by day key): 'home' = not going in, 'office' = going in. */
+  dayOverrides?: Record<number, 'home' | 'office'>;
 };
 
 /** Your commute modes, filled in from your usual way if you've never set them. */

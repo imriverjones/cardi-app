@@ -120,7 +120,27 @@ export const DAY_OFF = { leave: 10, back: 17 };
 /** 0 = Sunday … 6 = Saturday. Day keys count local days from 1 Jan 1970, a Thursday. */
 export const weekday = (dayKey: number) => (((dayKey + 4) % 7) + 7) % 7;
 
-export const isWorkDay = (s: Settings, dayKey: number) => (s.workDays ?? [1, 2, 3, 4, 5]).includes(weekday(dayKey));
+export const isWorkDay = (s: Settings, dayKey: number) => {
+  const o = s.dayOverrides?.[dayKey];
+  if (o) return o === 'office';
+  return (s.workDays ?? [1, 2, 3, 4, 5]).includes(weekday(dayKey));
+};
+
+/** Your usual pattern for a day, ignoring one-off changes. */
+export const usuallyWorks = (s: Settings, dayKey: number) => (s.workDays ?? [1, 2, 3, 4, 5]).includes(weekday(dayKey));
+
+/**
+ * Flip one day. Flipping back to your usual pattern removes the override, and old days are dropped
+ * so the map never grows.
+ */
+export function flipDay(s: Settings, dayKey: number): Settings['dayOverrides'] {
+  const next: Record<number, 'home' | 'office'> = {};
+  for (const [k, v] of Object.entries(s.dayOverrides ?? {})) if (Number(k) >= dayKey - 1) next[Number(k)] = v;
+  const goingIn = !isWorkDay(s, dayKey);
+  if (goingIn === usuallyWorks(s, dayKey)) delete next[dayKey];
+  else next[dayKey] = goingIn ? 'office' : 'home';
+  return next;
+}
 
 /** The settings that apply on this day: on days off, a 10am–5pm window and no commute. */
 export function forDay(s: Settings, dayKey: number): Settings {

@@ -25,7 +25,7 @@ export function commuteNudges(f: Forecast, s: Settings, now = Date.now()): Nudge
     if (!tip) continue;
     const at = timeAt(f, day - 1, Math.min(23.5, Math.max(s.tomorrowAt ?? 20, forDay(s, day - 1).back + 0.5)));
     if (at <= now + 60_000) continue;
-    out.push({ at, title: `Tomorrow: ${lower(tip.text)}`, body: `${tip.sub}${tip.swap ? ' Plan changed for the weather.' : ''}` });
+    out.push({ at, title: `Tomorrow: ${lower(tip.text)}`, body: `${tip.sub}${tip.swap ? ' Plan changed for the weather.' : ''} Not going in? Open Cardi to change.` });
   }
   return out;
 }

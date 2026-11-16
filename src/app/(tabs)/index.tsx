@@ -8,7 +8,7 @@ import { Box, Pill, T, tap, Wordmark } from '@/components/ui';
 import { useNow } from '@/components/use-now';
 import { WeatherCredit } from '@/components/weather-credit';
 import { LockPreview } from '@/components/widget-preview';
-import { forDay, localDayKey, localHourOf } from '@/engine/advice';
+import { flipDay, forDay, isWorkDay, localDayKey, localHourOf, usuallyWorks } from '@/engine/advice';
 import { t } from '@/engine/units';
 import { useApp } from '@/state/app-state';
 import { track } from '@/analytics';
@@ -96,6 +96,29 @@ export default function Today() {
       </View>
 
       <DayPlan a={a} s={s} p={p} nowH={nowH} onScrubbing={setScrubbing} />
+
+      {(() => {
+        const going = isWorkDay(s, a.dayKey);
+        const changed = going !== usuallyWorks(s, a.dayKey);
+        const when = isToday ? 'today' : 'that day';
+        const label = changed ? 'Back to your usual plan' : going ? `Not going in ${when}` : `Going in ${when}`;
+        return (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            onPress={() => {
+              tap();
+              track('day_flipped', { to: going ? 'home' : 'office' });
+              update({ dayOverrides: flipDay(s, a.dayKey) });
+            }}
+            style={({ pressed }) => ({ alignSelf: 'center', marginTop: -6, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 99, backgroundColor: p.paper, borderWidth: 1, borderColor: p.line, opacity: pressed ? 0.7 : 1 })}>
+            <T w="semibold" size={14} color={p.ink2}>
+              {label}
+              {changed ? '' : ' ›'}
+            </T>
+          </Pressable>
+        );
+      })()}
 
       {showWidgetCard && (
         <View>
