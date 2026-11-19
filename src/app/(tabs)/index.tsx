@@ -9,7 +9,6 @@ import { useNow } from '@/components/use-now';
 import { WeatherCredit } from '@/components/weather-credit';
 import { LockPreview } from '@/components/widget-preview';
 import { flipDay, forDay, isWorkDay, localDayKey, localHourOf, usuallyWorks } from '@/engine/advice';
-import { t } from '@/engine/units';
 import { useApp } from '@/state/app-state';
 import { track } from '@/analytics';
 
@@ -58,9 +57,9 @@ export default function Today() {
 
   const fbText =
     lastFeedback === 'cold'
-      ? `Got it. Your feels like is now ${t(a.mine)}, and I'll allow for you running cold.`
+      ? `Got it. I'll allow for you running cold from now on.`
       : lastFeedback === 'warm'
-        ? `Got it. Your feels like is now ${t(a.mine)}, and I'll allow for you running warm.`
+        ? `Got it. I'll allow for you running warm from now on.`
         : lastFeedback === 'ok'
           ? "Lovely. I'll keep it just like this."
           : 'Each answer tunes your feels like.';

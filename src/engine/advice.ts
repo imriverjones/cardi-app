@@ -91,6 +91,9 @@ export const STEPS: Step[] = [
   { max: 99, key: 'tee', day: 'No coat', short: 'No coat', art: 'tee', bag: null, kid: 'T-shirt, plus a sun hat' },
 ];
 
+/** The one-line answer: "Coat + brolly", "Light jacket", "No coat". */
+export const verdict = (a: { step: Step; brolly: boolean }) => `${a.step.day}${a.brolly ? ' + brolly' : ''}`;
+
 export function stepFor(feels: number, windy: boolean): Step {
   let i = STEPS.findIndex((s) => feels < s.max);
   if (i < 0) i = STEPS.length - 1;
@@ -212,6 +215,14 @@ export type Advice = {
   /** Today only: how it feels right now (for you) and the real temperature, same hour Apple Weather shows */
   nowFeels: number;
   nowTemp: number;
+  /** Apple Weather's own feels like, untouched, for showing. `nowFeels`, `mine` etc. are adjusted for you and drive the verdict. */
+  appleNow: number;
+  applePeak: number;
+  appleLo: number;
+  appleHi: number;
+  /** What the verdict would be on Apple's number alone, and whether your settings changed it */
+  plain: Step;
+  tuned: boolean;
   /** Today only: what's still to come, coldest to warmest, for "Feels 11–14°" */
   spanLo: number;
   spanHi: number;
@@ -402,7 +413,16 @@ export function advise(f: Forecast, settings: Settings, dayKey = localDayKey(f, 
   const nowHour = d[Math.min(23, Math.floor(fromHour))];
   const nowFeels = Math.round(nowHour.feels - s.bias * 1.5);
   const cools = (outDone ? nowFeels : leaveFeels) - homeFeels >= 4;
+  const appleNow = Math.round(nowHour.feels);
+  const applePeak = Math.round(d[peakHour].feels);
+  const plain = stepFor(standard, windy);
   return {
+    appleNow,
+    applePeak,
+    appleLo: Math.min(standard, appleNow),
+    appleHi: Math.max(applePeak, appleNow),
+    plain,
+    tuned: plain.key !== step.key,
     legs,
     cools,
     nowFeels,

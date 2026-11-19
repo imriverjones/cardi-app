@@ -1,15 +1,17 @@
+import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useRef, useState } from 'react';
-import { View, useWindowDimensions } from 'react-native';
+import { Pressable, View, useWindowDimensions } from 'react-native';
 
 import { DayRing } from '@/components/day-ring';
 import { Box, T, tap } from '@/components/ui';
-import { fmtClock, fmtHour, forDay, isSnow, personal, stepFor, wetChance, type Advice } from '@/engine/advice';
+import { fmtClock, fmtHour, forDay, isSnow, personal, stepFor, verdict, wetChance, type Advice } from '@/engine/advice';
 import { t } from '@/engine/units';
 import type { Settings } from '@/engine/types';
 import type { Palette } from '@/theme/skins';
 import type { Tone } from '@/widgets/CardiWidget';
 import { alerts } from '@/widgets/sync';
+import { track } from '@/analytics';
 
 export const toneColors = (p: Palette, tone: Tone) =>
   ({
@@ -77,13 +79,13 @@ export function DayPlan({
           }
           rain={a.rainStart != null ? [a.rainStart, a.rainEnd!] : null}>
           <T w="bold" size={12.5} color={p.ink3}>
-            {hr ? `Feels like at ${fmtHour(sh!)}` : today ? 'Feels like now' : 'Feels like for you'}
+            {hr ? `At ${fmtHour(sh!)}` : today ? 'Take today' : 'Take for the day'}
           </T>
-          <T w="black" size={ringSize * 0.22} style={{ letterSpacing: -3, lineHeight: ringSize * 0.24 }}>
-            {t(hr ? personal(hr.feels, s) : today ? a.nowFeels : a.mine)}
+          <T w="black" size={ringSize * 0.095} style={{ letterSpacing: -1, lineHeight: ringSize * 0.11, textAlign: 'center' }}>
+            {hr ? stepFor(personal(hr.feels, s), hr.wind >= 30).day : verdict(a)}
           </T>
-          <T w="heavy" size={17} style={{ textAlign: 'center' }}>
-            {hr ? stepFor(personal(hr.feels, s), hr.wind >= 30).day : a.step.day}
+          <T w="heavy" size={ringSize * 0.075} color={p.ink2} style={{ lineHeight: ringSize * 0.09 }}>
+            {`Feels ${t(hr ? Math.round(hr.feels) : today ? a.appleNow : a.standard)}`}
           </T>
           <T size={13} color={p.ink2} style={{ textAlign: 'center' }}>
             {hr
@@ -98,6 +100,19 @@ export function DayPlan({
         <T size={12} color={p.ink3}>
           Drag around the ring to see any hour
         </T>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Why this?"
+          hitSlop={8}
+          onPress={() => {
+            tap();
+            track('why_opened');
+            router.push({ pathname: '/why', params: { day: String(a.dayKey) } });
+          }}>
+          <T w="bold" size={13.5} color={p.accentText}>
+            {a.tuned ? 'Why this? Tuned to you ›' : 'Why this? ›'}
+          </T>
+        </Pressable>
       </View>
 
       {trips && !a.off && (

@@ -39,6 +39,7 @@ function Root() {
         <Stack.Screen name="place" options={{ presentation: 'formSheet', sheetAllowedDetents: [0.9], sheetGrabberVisible: true }} />
         <Stack.Screen name="widgets" options={{ presentation: 'modal' }} />
         <Stack.Screen name="suggest" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="why" options={{ presentation: 'modal' }} />
         <Stack.Screen name="day" />
       </Stack>
     </>

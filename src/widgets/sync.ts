@@ -130,7 +130,7 @@ function entry(a: Advice, settings: Settings, mode: CardiWidgetProps['mode']): C
   const s = forDay(settings, a.dayKey);
   // Today the big number is how it feels right now; tomorrow's is the trip out.
   const today = mode !== 'tomorrow';
-  const feels = today ? a.nowFeels : a.mine;
+  const feels = today ? a.appleNow : a.standard;
   const verdict = mode === 'home' ? (a.brolly ? 'Brolly out' : a.step.day) : a.step.day;
   const label =
     mode === 'tomorrow' ? (a.off ? 'Tomorrow · day off' : `Tomorrow, ${fmtClock(s.leave)}`) : 'Feels like now';
@@ -151,7 +151,7 @@ function entry(a: Advice, settings: Settings, mode: CardiWidgetProps['mode']): C
               : 'Dry all day.';
   const al = alerts(a, s, mode);
   // Above the clock: "Feels 9–17° · Jacket · Brolly home"
-  const [lo, hi] = today ? [a.spanLo, a.spanHi] : [a.mine, a.peak];
+  const [lo, hi] = today ? [a.appleLo, a.appleHi] : [a.standard, a.applePeak];
   const range = hi - lo >= 3 ? `${deg(lo)}–${deg(hi)}°` : tStr(feels);
   const rain = mode === 'home' ? a.rHome >= 40 : a.brolly;
   const rainWord = a.rOut >= 40 && a.rHome >= 40 ? 'Brolly' : a.rHome >= 40 ? 'Brolly home' : 'Brolly in';

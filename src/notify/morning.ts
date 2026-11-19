@@ -1,6 +1,6 @@
 import * as Notifications from 'expo-notifications';
 
-import { advise, isWorkDay, localDayKey, timeAt, type Advice } from '@/engine/advice';
+import { advise, isWorkDay, localDayKey, timeAt, verdict, type Advice } from '@/engine/advice';
 import type { Forecast, Settings } from '@/engine/types';
 import { setUnits, t, tRange } from '@/engine/units';
 import { alerts } from '@/widgets/sync';
@@ -22,11 +22,12 @@ Notifications.setNotificationHandler({
 
 /** The morning message: "Feels 9–17° · Jacket day" and the two things worth acting on, same as the widget. */
 export function morningMessage(a: Advice, s: Settings) {
-  const range = a.peak - a.mine >= 4 ? tRange(a.mine, a.peak) : t(a.mine);
+  // Apple's own numbers; the verdict is the part that's tuned to you.
+  const range = a.applePeak - a.standard >= 4 ? tRange(a.standard, a.applePeak) : t(a.standard);
   const lines = alerts(a, s, 'morning')
     .slice(0, 2)
     .map((x) => `${x.text}.`);
-  return { title: `Feels ${range} · ${a.step.day}`, body: lines.join(' ') };
+  return { title: `${verdict(a)} · feels ${range}`, body: lines.join(' ') };
 }
 
 /** Ask once. Returns whether notifications are allowed. */
