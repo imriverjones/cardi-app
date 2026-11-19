@@ -5,7 +5,7 @@ import { Pressable, View, useWindowDimensions } from 'react-native';
 
 import { DayRing } from '@/components/day-ring';
 import { Box, T, tap } from '@/components/ui';
-import { fmtClock, fmtHour, forDay, isSnow, personal, stepFor, verdict, wetChance, type Advice } from '@/engine/advice';
+import { fmtClock, fmtHour, forDay, isSnow, personal, skyFor, stepFor, verdict, wetChance, type Advice } from '@/engine/advice';
 import { t } from '@/engine/units';
 import type { Settings } from '@/engine/types';
 import type { Palette } from '@/theme/skins';
@@ -78,6 +78,7 @@ export function DayPlan({
                 ]
           }
           rain={a.rainStart != null ? [a.rainStart, a.rainEnd!] : null}>
+          <SymbolView name={hr ? skyFor(a, sh!) : a.sky} size={ringSize * 0.1} tintColor={p.accent} />
           <T w="bold" size={12.5} color={p.ink3}>
             {hr ? `At ${fmtHour(sh!)}` : today ? 'Take today' : 'Take for the day'}
           </T>

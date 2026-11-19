@@ -41,6 +41,8 @@ export type CardiWidgetProps = {
   short: string;
   /** Big SF Symbol for the outfit, shown on the large widget */
   outfitSymbol: SFSymbol;
+  /** The weather: sun, cloud, rain, snow */
+  sky: SFSymbol;
   /** Four tiles on the large widget */
   tiles: { tone: Tone; title: string; value: string }[];
   /** One line for the Lock Screen above the clock */
@@ -132,9 +134,12 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
     // Lock Screen box: the verdict, then the two things worth acting on.
     return (
       <VStack alignment="leading" spacing={1} modifiers={[frame({ maxWidth: Infinity, alignment: 'leading' }), link]}>
-        <Text modifiers={[font({ size: 16, weight: 'heavy', design: 'rounded' }), lineLimit(1), minimumScaleFactor(0.75)]}>
-          {props.mode === 'tomorrow' ? `Tomorrow · ${props.verdict}` : `${props.verdict} · ${props.range}`}
-        </Text>
+        <HStack spacing={4}>
+          <Image systemName={props.sky} size={14} />
+          <Text modifiers={[font({ size: 16, weight: 'heavy', design: 'rounded' }), lineLimit(1), minimumScaleFactor(0.75)]}>
+            {props.mode === 'tomorrow' ? `Tomorrow · ${props.verdict}` : `${props.verdict} · ${props.range}`}
+          </Text>
+        </HStack>
         {props.alerts.slice(0, 2).map((al, i) => (
           <Text key={i} modifiers={[font({ size: 13, weight: 'semibold' }), lineLimit(1), minimumScaleFactor(0.8)]}>
             {props.mode === 'tomorrow' && i === 0 ? `${props.range} · ${al.text}` : al.text}
@@ -160,9 +165,12 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
           ),
           link,
         ]}>
-        <Text modifiers={[font({ size: 13, weight: 'bold', design: 'rounded' }), foregroundStyle(P.accentText), lineLimit(1), minimumScaleFactor(0.8)]}>
-          {props.label}
-        </Text>
+        <HStack spacing={5}>
+          <Image systemName={props.sky} size={15} color={P.accentText} />
+          <Text modifiers={[font({ size: 13, weight: 'bold', design: 'rounded' }), foregroundStyle(P.accentText), lineLimit(1), minimumScaleFactor(0.8)]}>
+            {props.label}
+          </Text>
+        </HStack>
         <Spacer />
         <Text modifiers={[font({ size: 60, weight: 'black', design: 'rounded' }), foregroundStyle(P.accent), minimumScaleFactor(0.6), lineLimit(1)]}>
           {`${props.feels}°`}
@@ -183,9 +191,12 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
     return (
       <HStack spacing={16} modifiers={[frame({ maxWidth: Infinity, maxHeight: Infinity }), bg, link]}>
         <VStack alignment="leading" spacing={2} modifiers={[frame({ width: 112, alignment: 'leading' })]}>
-          <Text modifiers={[font({ size: 11, weight: 'heavy' }), foregroundStyle(P.accentText), lineLimit(1), minimumScaleFactor(0.7)]}>
-            {props.label.toUpperCase()}
-          </Text>
+          <HStack spacing={5}>
+            <Image systemName={props.sky} size={14} color={P.accentText} />
+            <Text modifiers={[font({ size: 11, weight: 'heavy' }), foregroundStyle(P.accentText), lineLimit(1), minimumScaleFactor(0.7)]}>
+              {props.label.toUpperCase()}
+            </Text>
+          </HStack>
           <Spacer />
           <Text modifiers={[font({ size: 50, weight: 'heavy', design: 'rounded' }), foregroundStyle(P.ink), lineLimit(1), minimumScaleFactor(0.6)]}>
             {`${props.feels}°`}
@@ -227,6 +238,7 @@ const CardiWidget = (props: CardiWidgetProps, env: WidgetEnvironment) => {
         </VStack>
         <Spacer />
         <VStack alignment="trailing" spacing={0}>
+          <Image systemName={props.sky} size={22} color={P.accentText} />
           <Text modifiers={[font({ size: 44, weight: 'heavy', design: 'rounded' }), foregroundStyle(P.ink)]}>{`${props.feels}°`}</Text>
           <Text modifiers={[font({ size: 11, weight: 'bold' }), foregroundStyle(P.ink3)]}>feels, for you</Text>
           <Text modifiers={[font({ size: 11, weight: 'medium' }), foregroundStyle(P.ink3)]}>{`${props.actual}° actual`}</Text>

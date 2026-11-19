@@ -1,5 +1,7 @@
 import { resolveLegs, type Forecast, type Hour, type Move, type Settings } from './types';
+import { isNight, skySymbol } from './sky';
 import { t as tStr, wind as windStr } from './units';
+import type { SFSymbol } from 'sf-symbols-typescript';
 
 /* ---------- time helpers (all in the forecast location's local time) ---------- */
 
@@ -90,6 +92,10 @@ export const STEPS: Step[] = [
   { max: 18, key: 'light', day: 'No coat', short: 'No coat', art: 'tee', bag: null, kid: 'A hoodie or light jacket' },
   { max: 99, key: 'tee', day: 'No coat', short: 'No coat', art: 'tee', bag: null, kid: 'T-shirt, plus a sun hat' },
 ];
+
+/** The weather icon for an hour of an advice day. */
+export const skyFor = (a: { hours: Hour[]; dayKey: number; north: boolean }, hour: number): SFSymbol =>
+  skySymbol(a.hours[hour].code, isNight(a.dayKey, hour, a.north ? 1 : -1));
 
 /** The one-line answer: "Coat + brolly", "Light jacket", "No coat". */
 export const verdict = (a: { step: Step; brolly: boolean }) => `${a.step.day}${a.brolly ? ' + brolly' : ''}`;
@@ -218,6 +224,10 @@ export type Advice = {
   /** Apple Weather's own feels like, untouched, for showing. `nowFeels`, `mine` etc. are adjusted for you and drive the verdict. */
   appleNow: number;
   applePeak: number;
+  /** Which hemisphere, for day and night icons */
+  north: boolean;
+  /** The icon for now (today) or for when you set off (other days) */
+  sky: SFSymbol;
   appleLo: number;
   appleHi: number;
   /** What the verdict would be on Apple's number alone, and whether your settings changed it */
@@ -416,7 +426,11 @@ export function advise(f: Forecast, settings: Settings, dayKey = localDayKey(f, 
   const appleNow = Math.round(nowHour.feels);
   const applePeak = Math.round(d[peakHour].feels);
   const plain = stepFor(standard, windy);
+  const skyHour = fromHour > 0 ? Math.min(23, Math.floor(fromHour)) : off ? 12 : Math.min(23, Math.floor(s.leave));
+  const north = f.lat >= 0;
   return {
+    north,
+    sky: skyFor({ hours: d, dayKey, north }, skyHour),
     appleNow,
     applePeak,
     appleLo: Math.min(standard, appleNow),

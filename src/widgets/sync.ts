@@ -171,7 +171,7 @@ function entry(a: Advice, settings: Settings, mode: CardiWidgetProps['mode']): C
         : 'umbrella.fill'
       : showers
         ? 'cloud.rain.fill'
-        : OUTFIT_SYMBOL[a.step.art];
+        : a.sky;
   return {
     skin: s.skin,
     mode,
@@ -189,6 +189,7 @@ function entry(a: Advice, settings: Settings, mode: CardiWidgetProps['mode']): C
     alerts: al,
     short: a.step.short,
     outfitSymbol: OUTFIT_SYMBOL[a.step.art],
+    sky: a.sky,
     tiles: tiles(a, s),
     inline,
     inlineSymbol,
